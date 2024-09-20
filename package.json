@@ -1,0 +1,21 @@
+{
+  "name": "pnpm-hoist-layer",
+  "version": "1.0.0",
+  "description": "use `.pnpmfile.cjs` to hoist deps to monorepo like nuxt layer",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trydofor/pnpm-hoist-layer.git"
+  },
+  "keywords": [
+    "pnpm",
+    "hoist",
+    "layer"
+  ],
+  "author": "trydofor",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/trydofor/pnpm-hoist-layer/issues"
+  },
+  "homepage": "https://github.com/trydofor/pnpm-hoist-layer#readme"
+}
