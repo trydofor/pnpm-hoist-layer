@@ -4,6 +4,7 @@ const cachedFile = 'node_modules/.hoist-layer.json';
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const debug = false;
 
 // find the monorepo root by searching for .pnpmfile.cjs
 function findMonorepoRoot(pwd) {
@@ -28,7 +29,10 @@ const hoistLayer = JSON.parse(fs.readFileSync(packageJson, 'utf-8'))[packageKey]
 if (hoistLayer == null) {
   throw new Error('"hoistLayer":[""] is not defined in package.json');
 }
-// console.log('DEBUG: hoistLayer \n' + JSON.stringify(hoistLayer, null, 2));
+
+if (debug) {
+  console.log('DEBUG: hoistLayer \n' + JSON.stringify(hoistLayer, null, 2));
+}
 
 const cachedPath = path.resolve(monorepoRoot, cachedFile);
 const cacheExist = fs.existsSync(cachedPath);
@@ -36,12 +40,16 @@ const resolutionOnly = process.argv.includes('--resolution-only');
 if (resolutionOnly && cacheExist) {
   fs.rmSync(cachedPath);
 }
-// console.log(`DEBUG: cachedPath=${cachedPath}`);
-// console.log(`DEBUG: cacheExist=${cacheExist}`);
-// console.log(`DEBUG: resolutionOnly=${resolutionOnly}`);
+if (debug) {
+  console.log(`DEBUG: cachedPath=${cachedPath}`);
+  console.log(`DEBUG: cacheExist=${cacheExist}`);
+  console.log(`DEBUG: resolutionOnly=${resolutionOnly}`);
+}
 if (!resolutionOnly && cacheExist) {
   loadFlatLayer();
-  // console.log('DEBUG: loadFlatLayer \n' + JSON.stringify(Array.from(flatLayerMap.values()), null, 2));
+  if (debug) {
+    console.log('DEBUG: loadFlatLayer \n' + JSON.stringify(Array.from(flatLayerMap.values()), null, 2));
+  }
 }
 
 function loadFlatLayer() {
@@ -94,7 +102,7 @@ function readPackage(pkg, context) {
 
   if (flatLayerMap.size === 0) {
     context.log('resolution the hoist layers');
-    execSync('pnpm i --resolution-only', { stdio: 'ignore' });
+    execSync('pnpm i --resolution-only', { stdio: debug ? 'inherit' : 'ignore' });
     loadFlatLayer();
     if (flatLayerMap.size === 0) {
       throw new Error('failed to load layer package by pnpm i --resolution-only');
@@ -122,7 +130,8 @@ function readPackage(pkg, context) {
 
 function afterAllResolved(lockfile) {
   if (resolutionOnly && flatLayerMap.size !== hoistLayer.length) {
-    throw new Error('hoistLayer size is not equal to flatLayerMap size');
+    const mapJson = JSON.stringify(Array.from(flatLayerMap.values()), null, 2);
+    throw new Error(`should check deps version(support "file:","workspace:"), as hoistLayer size is not equal to flatLayerMap=${mapJson}`);
   }
   return lockfile;
 }

@@ -1,7 +1,7 @@
 {
   "name": "pnpm-hoist-layer",
-  "version": "1.0.0",
-  "description": "use `.pnpmfile.cjs` to hoist deps to monorepo like nuxt layer",
+  "version": "1.0.1",
+  "description": "use `.pnpmfile.cjs` to hoist deps by project like nuxt layer",
   "main": "index.js",
   "repository": {
     "type": "git",

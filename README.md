@@ -8,7 +8,7 @@ pnpm public hoist only affect to the root project, but not to the sub project,
 as Nuxt layer, we do not want to copy deps/devDeps from here to there,
 so we need to hoist layer's deps to the project.
 
-### before - miss nuxt
+### before - no nuxt deps in mobile
 
 ```tree
 ├── common
@@ -20,7 +20,7 @@ so we need to hoist layer's deps to the project.
     │   │   └── razor-common -> ../../../common
 ```
 
-### after - hoist nuxt
+### after - hoist nuxt from common
 
 ```tree
 ├── common
@@ -39,14 +39,10 @@ add `hoistLayer` to package.json
 
 ```diff
   "devDependencies": {
-    "taze": "catalog:devops",
-    "rimraf": "catalog:devops",
-    "@changesets/cli": "catalog:devops"
-- }
-+ },
++   "@fessional/razor-common": "file:../common",
+  },
 + "hoistLayer": [
 +   "@fessional/razor-common",
-+   "@fessional/razor-mobile"
 + ]
 ```
 
