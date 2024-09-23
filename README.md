@@ -1,4 +1,4 @@
-# pnpm-hoist-layer
+# 🪝 pnpm-hoist-layer
 
 use `.pnpmfile.cjs` to hoist deps to monorepo like nuxt layer
 
@@ -49,30 +49,41 @@ add `hoistLayer` to package.json
 hook and hoist deps
 
 ```bash
-## option 1: install and require in global
+## 🪝 opt-1: install and require in global
 pnpm add -g pnpm-hoist-layer
 cat > .pnpmfile.cjs << 'EOF'
-const { hooks } = require('pnpm-hoist-layer')
-module.exports = {
-  hooks,
-}
+module.exports = (() => {
+  try {
+    return require('pnpm-hoist-layer');
+  }
+  catch {
+    const gr = require('child_process').execSync('pnpm root -g').toString().trim();
+    return require(require('path').join(gr, 'pnpm-hoist-layer'));
+  }
+})();
 EOF
 
-## option 2: write this to .pnpmfile.cjs
-curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor/pnpm-hoist-layer/main/index.js
+## 🪝 opt-2: write this to .pnpmfile.cjs
+curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
+/pnpm-hoist-layer/main/index.js
 ```
 
-useful commands
+## Useful commands
 
 ```bash
 ## install pkgs
-pnpm install
+pnpm i
 
 ## rebuild cached
 pnpm i --resolution-only
 
 ## skip if error
 pnpm i --ignore-pnpmfile --ignore-scripts
+
+## asdf manager
+export PNPM_HOME="$(asdf where pnpm)/bin"
+export PATH="$PNPM_HOME:$PATH"
+pnpm -g add pnpm-hoist-layer
 ```
 
 ## License
