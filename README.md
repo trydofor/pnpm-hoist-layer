@@ -1,41 +1,48 @@
 # 🪝 pnpm-hoist-layer
 
-use `.pnpmfile.cjs` to hoist deps to monorepo like nuxt layer
+use `.pnpmfile.cjs` to hoist deps by project like
+[nuxt layer](https://nuxt.com/docs/getting-started/layers)
 
 ## Purpose
 
-pnpm public hoist only affect to the root project, but not to the sub project,
+pnpm [public-hoist-pattern](https://pnpm.io/npmrc#public-hoist-pattern)
+only affects to the top-project (virtual store), not the sub-projects,
 as Nuxt layer, we do not want to copy deps/devDeps from here to there,
-so we need to hoist layer's deps to the project.
+so we want to hoist the layer's deps to the project.
 
-### before - no nuxt deps in mobile
+e.g. `common->@nuxt`, `mobile->common`, but omit `@nuxt`
+
+### before - no nuxt in mobile
 
 ```tree
 ├── common
 │   ├── node_modules
-│   │   ├── @nuxt
+│   │   ├── @nuxt -> ../.pnpm/...
 └── mobile
     ├── node_modules
     │   ├── @fessional
-    │   │   └── razor-common -> ../../../common
+    │   │   └── razor-common -> ../.pnpm/...
 ```
 
-### after - hoist nuxt from common
+### after - hoist nuxt by common
 
 ```tree
-├── common
-│   ├── node_modules
-│   │   ├── @nuxt
 └── mobile
     ├── node_modules
     │   ├── @fessional
-    │   │   └── razor-common -> ../../../common
-    │   ├── @nuxt // ✅ hoist from razor-common
+    │   │   └── razor-common -> ../.pnpm/...
+    │   ├── @nuxt -> ../.pnpm/... // ✅ hoist as layer
 ```
 
 ## Usage
 
-add `hoistLayer` to package.json
+add the `layer` deps to the following fields in package.json
+
+* `hoistLayer` - to hoist the deps of the layer
+* `dependencies` or `devDependencies` - for the package manager
+
+NOTE: do NOT use [`link:`](https://pnpm.io/cli/link), as it will
+not hook [`readPackage`](https://pnpm.io/pnpmfile)
 
 ```diff
   "devDependencies": {
@@ -46,10 +53,10 @@ add `hoistLayer` to package.json
 + ]
 ```
 
-hook and hoist deps
+hook and hoist deps by layers project
 
 ```bash
-## 🪝 opt-1: install and require in global
+## 🪝 opt-1: global install and require
 pnpm add -g pnpm-hoist-layer
 cat > .pnpmfile.cjs << 'EOF'
 module.exports = (() => {
@@ -63,7 +70,7 @@ module.exports = (() => {
 })();
 EOF
 
-## 🪝 opt-2: write this to .pnpmfile.cjs
+## 🪝 opt-2: write to .pnpmfile.cjs
 curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
 /pnpm-hoist-layer/main/index.js
 ```
@@ -73,14 +80,12 @@ curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
 ```bash
 ## install pkgs
 pnpm i
-
 ## rebuild cached
 pnpm i --resolution-only
-
 ## skip if error
 pnpm i --ignore-pnpmfile --ignore-scripts
 
-## asdf manager
+## for asdf manager
 export PNPM_HOME="$(asdf where pnpm)/bin"
 export PATH="$PNPM_HOME:$PATH"
 pnpm -g add pnpm-hoist-layer
