@@ -1,0 +1,9 @@
+{
+  "name": "mono-test",
+  "version": "1.0.0",
+  "description": "pnpm monorepo (workspace) test",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

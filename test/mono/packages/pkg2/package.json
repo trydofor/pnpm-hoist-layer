@@ -1,0 +1,10 @@
+{
+  "name": "mono-test-2",
+  "version": "1.0.0",
+  "dependencies": {
+    "big-integer": "1.6.52"
+  },
+  "devDependencies": {
+    "dayjs": "1.11.9"
+  }
+}

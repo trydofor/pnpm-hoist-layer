@@ -1,0 +1,9 @@
+{
+  "name": "poly-test",
+  "version": "1.0.0",
+  "description": "pnpm polyrepo (not workspace) test",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

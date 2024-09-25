@@ -1,0 +1,131 @@
+﻿console.log("Test and Diff");
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+function reset(repo) {
+  const dirs = fs.readdirSync(repo, { withFileTypes: true });
+  for (const dir of dirs) {
+    const dr = dir.name;
+    const pt = path.join(repo, dr);
+    if (dr === 'node_modules') {
+      fs.rmSync(pt, { recursive: true });
+    }
+    else if (dr === 'pnpm-lock.yaml') {
+      fs.unlinkSync(pt);
+    }
+    else if (dir.isDirectory()) {
+      reset(pt);
+    }
+  }
+}
+
+function scan(repo) {
+  const flat = [];
+  const dirs = fs.readdirSync(repo, { withFileTypes: true });
+  for (const dir of dirs) {
+    const dr = dir.name;
+    const pt = path.join(repo, dr);
+    if (dr === 'node_modules') {
+      const deps = fs.readdirSync(pt, { withFileTypes: true });
+      for (const dep of deps) {
+        if (!dep.name.startsWith('.')) {
+          const rp = path.join(pt, dep.name).substring(__dirname.length + 1);
+          flat.push(rp);
+        }
+      }
+    }
+    else if (dir.isDirectory()) {
+      flat.push(...scan(pt));
+    }
+  }
+
+  return flat;
+}
+
+function test(repo) {
+  const prj = path.resolve(__dirname, repo.name);
+
+  reset(prj)
+  execSync('pnpm -r i --ignore-pnpmfile', { stdio: 'ignore', cwd: prj });
+  const deps1 = scan(prj);
+
+  reset(prj)
+  execSync('pnpm -r i', { stdio: 'ignore', cwd: prj });
+  const deps2 = scan(prj);
+
+  // check
+  const set1 = new Set(deps1);
+  let len1 = repo.before.length;
+  for (const dep of repo.before) {
+    if (set1.delete(dep)) {
+      len1--;
+    }
+  }
+
+  const set2 = new Set(deps2);
+  let len2 = repo.after.length;
+  for (const dep of repo.after) {
+    if (set2.delete(dep)) {
+      len2--;
+    }
+  }
+
+  if (set1.size === 0 && set2.size === 0 && len1 === 0 && len2 === 0) {
+    console.log(`✅ Success ${repo.name}`);
+  } else {
+    console.log(`❌ Failed ${repo.name}`);
+    console.log('⭕️ before expect: ' + JSON.stringify(repo.before, null, 2));
+    console.log('❌ before actual: ' + JSON.stringify(deps1, null, 2));
+    console.log('⭕️  after expect: ' + JSON.stringify(repo.after, null, 2));
+    console.log('❌  after actual: ' + JSON.stringify(deps2, null, 2));
+    process.exit(1);
+  }
+}
+
+const repos = [
+  {
+    name: 'mono',
+    before: [
+      'mono/packages/pkg0/node_modules/mono-test-1',
+      'mono/packages/pkg1/node_modules/mono-test-2',
+      'mono/packages/pkg2/node_modules/big-integer',
+      'mono/packages/pkg2/node_modules/dayjs',
+    ],
+    after: [
+      'mono/packages/pkg0/node_modules/big-integer',
+      'mono/packages/pkg0/node_modules/dayjs',
+      'mono/packages/pkg0/node_modules/mono-test-1',
+      'mono/packages/pkg0/node_modules/mono-test-2',
+      'mono/packages/pkg1/node_modules/big-integer',
+      'mono/packages/pkg1/node_modules/dayjs',
+      'mono/packages/pkg1/node_modules/mono-test-2',
+      'mono/packages/pkg2/node_modules/big-integer',
+      'mono/packages/pkg2/node_modules/dayjs',
+    ]
+  },
+  {
+    name: 'poly',
+    before: [
+      'poly/packages/pkg0/node_modules/poly-test-1',
+      'poly/packages/pkg1/node_modules/poly-test-2',
+      'poly/packages/pkg2/node_modules/big-integer',
+      'poly/packages/pkg2/node_modules/dayjs',
+    ],
+    after: [
+      'poly/packages/pkg0/node_modules/big-integer',
+      'poly/packages/pkg0/node_modules/dayjs',
+      'poly/packages/pkg0/node_modules/poly-test-1',
+      'poly/packages/pkg0/node_modules/poly-test-2',
+      'poly/packages/pkg1/node_modules/big-integer',
+      'poly/packages/pkg1/node_modules/dayjs',
+      'poly/packages/pkg1/node_modules/poly-test-2',
+      'poly/packages/pkg2/node_modules/big-integer',
+      'poly/packages/pkg2/node_modules/dayjs',
+    ]
+  }];
+
+for (const repo of repos) {
+  test(repo);
+}

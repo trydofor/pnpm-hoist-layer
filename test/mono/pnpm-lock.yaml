@@ -1,0 +1,58 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+pnpmfileChecksum: tp3fybht3gmmxq5il7v2sw3gbe
+
+importers:
+
+  .: {}
+
+  packages/pkg0:
+    devDependencies:
+      mono-test-1:
+        specifier: file:../pkg1
+        version: link:../pkg1
+      mono-test-2:
+        specifier: workspace:*
+        version: link:../pkg2
+
+  packages/pkg1:
+    dependencies:
+      big-integer:
+        specifier: 1.6.52
+        version: 1.6.52
+    devDependencies:
+      dayjs:
+        specifier: 1.11.9
+        version: 1.11.9
+      mono-test-2:
+        specifier: workspace:*
+        version: link:../pkg2
+
+  packages/pkg2:
+    dependencies:
+      big-integer:
+        specifier: 1.6.52
+        version: 1.6.52
+    devDependencies:
+      dayjs:
+        specifier: 1.11.9
+        version: 1.11.9
+
+packages:
+
+  big-integer@1.6.52:
+    resolution: {integrity: sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==}
+    engines: {node: '>=0.6'}
+
+  dayjs@1.11.9:
+    resolution: {integrity: sha512-QvzAURSbQ0pKdIye2txOzNaHmxtUBXerpY0FJsFXUMKbIZeFm5ht1LS/jFsrncjnmtv8HsG0W2g6c0zUjZWmpA==}
+
+snapshots:
+
+  big-integer@1.6.52: {}
+
+  dayjs@1.11.9: {}

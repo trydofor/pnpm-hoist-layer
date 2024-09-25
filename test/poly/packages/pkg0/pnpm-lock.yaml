@@ -1,0 +1,54 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+pnpmfileChecksum: foygrongpeiu6qysvwcy4bl3sa
+
+importers:
+
+  .:
+    dependencies:
+      big-integer:
+        specifier: 1.6.52
+        version: 1.6.52
+    devDependencies:
+      dayjs:
+        specifier: 1.11.9
+        version: 1.11.9
+      poly-test-1:
+        specifier: file:../pkg1
+        version: file:../pkg1
+      poly-test-2:
+        specifier: file:../pkg2
+        version: file:../pkg2
+
+packages:
+
+  big-integer@1.6.52:
+    resolution: {integrity: sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==}
+    engines: {node: '>=0.6'}
+
+  dayjs@1.11.9:
+    resolution: {integrity: sha512-QvzAURSbQ0pKdIye2txOzNaHmxtUBXerpY0FJsFXUMKbIZeFm5ht1LS/jFsrncjnmtv8HsG0W2g6c0zUjZWmpA==}
+
+  poly-test-1@file:../pkg1:
+    resolution: {directory: ../pkg1, type: directory}
+
+  poly-test-2@file:../pkg2:
+    resolution: {directory: ../pkg2, type: directory}
+
+snapshots:
+
+  big-integer@1.6.52: {}
+
+  dayjs@1.11.9: {}
+
+  poly-test-1@file:../pkg1:
+    dependencies:
+      big-integer: 1.6.52
+
+  poly-test-2@file:../pkg2:
+    dependencies:
+      big-integer: 1.6.52
