@@ -72,14 +72,18 @@ function test(repo) {
     }
   }
 
-  if (set1.size === 0 && set2.size === 0 && len1 === 0 && len2 === 0) {
+  if (set1.size === 0 && len1 === 0 && set2.size === 0 && len2 === 0) {
     console.log(`✅ Success ${repo.name}`);
   } else {
     console.log(`❌ Failed ${repo.name}`);
-    console.log('⭕️ before expect: ' + JSON.stringify(repo.before, null, 2));
-    console.log('❌ before actual: ' + JSON.stringify(deps1, null, 2));
-    console.log('⭕️  after expect: ' + JSON.stringify(repo.after, null, 2));
-    console.log('❌  after actual: ' + JSON.stringify(deps2, null, 2));
+    if (set1.size !== 0 || len1 !== 0) {
+      console.log('⭕️ before expect: ' + JSON.stringify(repo.before, null, 2));
+      console.log('❌ before actual: ' + JSON.stringify(deps1, null, 2));
+    }
+    if (set2.size !== 0 || len2 !== 0) {
+      console.log('⭕️  after expect: ' + JSON.stringify(repo.after, null, 2));
+      console.log('❌  after actual: ' + JSON.stringify(deps2, null, 2));
+    }
     process.exit(1);
   }
 }
@@ -90,19 +94,19 @@ const repos = [
     before: [
       'mono/packages/pkg0/node_modules/mono-test-1',
       'mono/packages/pkg1/node_modules/mono-test-2',
-      'mono/packages/pkg2/node_modules/big-integer',
-      'mono/packages/pkg2/node_modules/dayjs',
+      'mono/packages/pkg2/node_modules/solo-dev-dep',
+      'mono/packages/pkg2/node_modules/solo-prd-dep',
     ],
     after: [
-      'mono/packages/pkg0/node_modules/big-integer',
-      'mono/packages/pkg0/node_modules/dayjs',
+      'mono/packages/pkg0/node_modules/solo-dev-dep',
+      'mono/packages/pkg0/node_modules/solo-prd-dep',
       'mono/packages/pkg0/node_modules/mono-test-1',
       'mono/packages/pkg0/node_modules/mono-test-2',
-      'mono/packages/pkg1/node_modules/big-integer',
-      'mono/packages/pkg1/node_modules/dayjs',
+      'mono/packages/pkg1/node_modules/solo-dev-dep',
+      'mono/packages/pkg1/node_modules/solo-prd-dep',
       'mono/packages/pkg1/node_modules/mono-test-2',
-      'mono/packages/pkg2/node_modules/big-integer',
-      'mono/packages/pkg2/node_modules/dayjs',
+      'mono/packages/pkg2/node_modules/solo-dev-dep',
+      'mono/packages/pkg2/node_modules/solo-prd-dep',
     ]
   },
   {
@@ -110,19 +114,19 @@ const repos = [
     before: [
       'poly/packages/pkg0/node_modules/poly-test-1',
       'poly/packages/pkg1/node_modules/poly-test-2',
-      'poly/packages/pkg2/node_modules/big-integer',
-      'poly/packages/pkg2/node_modules/dayjs',
+      'poly/packages/pkg2/node_modules/solo-dev-dep',
+      'poly/packages/pkg2/node_modules/solo-prd-dep',
     ],
     after: [
-      'poly/packages/pkg0/node_modules/big-integer',
-      'poly/packages/pkg0/node_modules/dayjs',
+      'poly/packages/pkg0/node_modules/solo-dev-dep',
+      'poly/packages/pkg0/node_modules/solo-prd-dep',
       'poly/packages/pkg0/node_modules/poly-test-1',
       'poly/packages/pkg0/node_modules/poly-test-2',
-      'poly/packages/pkg1/node_modules/big-integer',
-      'poly/packages/pkg1/node_modules/dayjs',
+      'poly/packages/pkg1/node_modules/solo-dev-dep',
+      'poly/packages/pkg1/node_modules/solo-prd-dep',
       'poly/packages/pkg1/node_modules/poly-test-2',
-      'poly/packages/pkg2/node_modules/big-integer',
-      'poly/packages/pkg2/node_modules/dayjs',
+      'poly/packages/pkg2/node_modules/solo-dev-dep',
+      'poly/packages/pkg2/node_modules/solo-prd-dep',
     ]
   }];
 

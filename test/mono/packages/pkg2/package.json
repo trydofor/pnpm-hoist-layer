@@ -2,9 +2,9 @@
   "name": "mono-test-2",
   "version": "1.0.0",
   "dependencies": {
-    "big-integer": "1.6.52"
+    "solo-prd-dep": "link:../../solo/prd"
   },
   "devDependencies": {
-    "dayjs": "1.11.9"
+    "solo-dev-dep": "link:../../solo/dev"
   }
 }

@@ -108,22 +108,22 @@ diff `mono` from `pnpm -r i --ignore-pnpmfile` to `pnpm -r i` like this,
 Legend: production dependency, optional only, dev only
 mono-test-0@1.0.0 pnpm-hoist-layer/test/mono/packages/pkg0
 + dependencies:
-+   big-integer 1.6.52
++   solo-prd-dep link:../../solo/prd
 = devDependencies:
-+   dayjs 1.11.9
 =   mono-test-1 link:../pkg1
 +   mono-test-2 link:../pkg2
++   solo-dev-dep link:../../solo/dev
 mono-test-1@1.0.0 pnpm-hoist-layer/test/mono/packages/pkg1
 + dependencies:
-+   big-integer 1.6.52
++   solo-prd-dep link:../../solo/prd
 = devDependencies:
-+   dayjs 1.11.9
 =   mono-test-2 link:../pkg2
++   solo-dev-dep link:../../solo/dev
 mono-test-2@1.0.0 pnpm-hoist-layer/test/mono/packages/pkg2
 = dependencies:
-=   big-integer 1.6.52
+=   solo-prd-dep link:../../solo/prd
 = devDependencies:
-=   dayjs 1.11.9
+=   solo-dev-dep link:../../solo/dev
 
 ## tree -L 4
 ✅ mono
@@ -132,21 +132,21 @@ mono-test-2@1.0.0 pnpm-hoist-layer/test/mono/packages/pkg2
 = ├── packages
 = │   ├── pkg0
 = │   │   ├── node_modules
-+ │   │   │   ├── big-integer -> ../../../node_modules/.pnpm/
-+ │   │   │   ├── dayjs -> ../../../node_modules/.pnpm/
-= │   │   │   ├── mono-test-1 -> ../../pkg1
+= │   │   │   ├── mono-test-1 -> ../../../node_modules/.pnpm/
 + │   │   │   └── mono-test-2 -> ../../pkg2
++ │   │   │   ├── solo-dev-dep -> ../../../solo/dev
++ │   │   │   ├── solo-prd-dep -> ../../../solo/prd
 = │   │   └── package.json
 = │   ├── pkg1
 = │   │   ├── node_modules
-+ │   │   │   ├── big-integer -> ../../../node_modules/.pnpm/
-+ │   │   │   ├── dayjs -> ../../../node_modules/.pnpm/
 = │   │   │   └── mono-test-2 -> ../../pkg2
++ │   │   │   ├── solo-dev-dep -> ../../../solo/dev
++ │   │   │   ├── solo-prd-dep -> ../../../solo/prd
 = │   │   └── package.json
 = │   └── pkg2
 = │       ├── node_modules
-= │       │   ├── big-integer -> ../../../node_modules/.pnpm/
-= │       │   └── dayjs -> ../../../node_modules/.pnpm/
+= │       │   └── solo-dev-dep -> ../../../solo/dev
+= │       │   ├── solo-prd-dep -> ../../../solo/prd
 = │       └── package.json
 = ├── pnpm-lock.yaml
 = └── pnpm-workspace.yaml
@@ -161,22 +161,22 @@ diff `poly` from `pnpm -r i --ignore-pnpmfile` to `pnpm -r i` like this,
 Legend: production dependency, optional only, dev only
 poly-test-0@1.0.0 pnpm-hoist-layer/test/poly/packages/pkg0
 + dependencies:
-+   big-integer 1.6.52
++   solo-prd-dep link:../../solo/prd
 = devDependencies:
-+   dayjs 1.11.9
 =   poly-test-1 file:../pkg1
 +   poly-test-2 file:../pkg2
++   solo-dev-dep link:../../solo/dev
 poly-test-1@1.0.0 pnpm-hoist-layer/test/poly/packages/pkg1
 + dependencies:
-+   big-integer 1.6.52
++   solo-prd-dep link:../../solo/prd
 = devDependencies:
-+   dayjs 1.11.9
 =   poly-test-2 file:../pkg2
++   solo-dev-dep link:../../solo/dev
 poly-test-2@1.0.0 pnpm-hoist-layer/test/poly/packages/pkg2
 = dependencies:
-=   big-integer 1.6.52
+=   solo-prd-dep link:../../solo/prd
 = devDependencies:
-=   dayjs 1.11.9
+=   solo-dev-dep link:../../solo/dev
 
 ## tree -L 4
 ✅ poly
@@ -184,23 +184,23 @@ poly-test-2@1.0.0 pnpm-hoist-layer/test/poly/packages/pkg2
 = ├── packages
 = │   ├── pkg0
 = │   │   ├── node_modules
-+ │   │   │   ├── big-integer -> .pnpm/
-+ │   │   │   ├── dayjs -> .pnpm/
 = │   │   │   ├── poly-test-1 -> .pnpm/
 + │   │   │   └── poly-test-2 -> .pnpm/
++ │   │   │   ├── solo-dev-dep -> ../../../solo/dev
++ │   │   │   ├── solo-prd-dep -> ../../../solo/prd
 = │   │   ├── package.json
 = │   │   └── pnpm-lock.yaml
 = │   ├── pkg1
 = │   │   ├── node_modules
-+ │   │   │   ├── big-integer -> .pnpm/
-+ │   │   │   ├── dayjs -> .pnpm/
 = │   │   │   └── poly-test-2 -> .pnpm/
++ │   │   │   ├── solo-dev-dep -> ../../../solo/dev
++ │   │   │   ├── solo-prd-dep -> ../../../solo/prd
 = │   │   ├── package.json
 = │   │   └── pnpm-lock.yaml
 = │   └── pkg2
 = │       ├── node_modules
-= │       │   ├── big-integer -> .pnpm/
-= │       │   └── dayjs -> .pnpm/
+= │       │   ├── solo-dev-dep -> ../../../solo/dev
+= │       │   └── solo-prd-dep -> ../../../solo/prd
 = │       ├── package.json
 = │       └── pnpm-lock.yaml
 = └── pnpm-lock.yaml
