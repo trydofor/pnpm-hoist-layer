@@ -47,7 +47,7 @@ but hoist from tree bottom to top, it's a reverse process.
 hook and hoist deps by layers project
 
 ```bash
-## 🪝 opt-1: global install and require
+## 🏠 opt-1: global install and require
 pnpm add -g pnpm-hoist-layer
 cat > .pnpmfile.cjs << 'EOF'
 module.exports = (() => {
@@ -61,26 +61,43 @@ module.exports = (() => {
 })();
 EOF
 
-## 🪝 opt-2: write to .pnpmfile.cjs
+## 📦 opt-2: write content to .pnpmfile.cjs
 curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
 /pnpm-hoist-layer/main/index.js
+
+## 💾 opt-3: project install and require
+pnpm add pnpm-hoist-layer
+cat > .pnpmfile.cjs << 'EOF'
+module.exports = require('pnpm-hoist-layer');
+EOF
 ```
 
 ## Useful Commands
 
 ```bash
-## install pkgs with DEBUG
+## init workspace top-project first
+pnpm -w i --ignore-pnpmfile
+## init workspace sub-project
+pnpm -r i
+## to debug with env DEBUG != null
 DEBUG=1 pnpm i
-## rebuild cached
-pnpm i --resolution-only
-## skip if error
+## ignore if error
 pnpm i --ignore-pnpmfile --ignore-scripts
 
-## for asdf manager
-export PNPM_HOME="$(asdf where pnpm)/bin"
-export PATH="$PNPM_HOME:$PATH"
+## asdf nodejs+pnpm, should disable corepack
+export PNPM_HOME="$(asdf where pnpm)"
 pnpm -g add pnpm-hoist-layer
+
+## only corepack
+corepack enable pnpm
+corepack use pnpm@latest
 ```
+
+## Known Issues
+
+* ✅ pnpm 9.9 works, but 🐞 [9.10, 9.11](https://github.com/pnpm/pnpm/issues/8538)
+* ✅ monorepo + shared-workspace-lockfile=false, but 🐞 the [default,true](https://github.com/vuejs/language-tools/issues/4860)
+* ✅ monorepo pnpm cli at top-dir, but 🐞 sub-dir (`packages/*`)
 
 ## Test and Diff
 
@@ -88,15 +105,10 @@ pnpm -g add pnpm-hoist-layer
 node -v #v20.16.0
 pnpm -v #9.11.0
 
-## pnpm via corepack
-corepack enable pnpm
-corepack use pnpm@latest
-
-## test if success
 pnpm test
-# Test and Diff
-# ✅ Success mono
-# ✅ Success poly
+# ✅ Success mono, npmrc={}
+# ✅ Success mono, npmrc={"shared-workspace-lockfile":false}
+# ✅ Success poly, npmrc={}
 ```
 
 ### Mono before and after

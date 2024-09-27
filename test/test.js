@@ -1,6 +1,4 @@
-﻿console.log("Test and Diff");
-
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
@@ -12,7 +10,7 @@ function reset(repo) {
     if (dr === 'node_modules') {
       fs.rmSync(pt, { recursive: true });
     }
-    else if (dr === 'pnpm-lock.yaml') {
+    else if (dr === 'pnpm-lock.yaml' || dr === '.npmrc') {
       fs.unlinkSync(pt);
     }
     else if (dir.isDirectory()) {
@@ -44,16 +42,31 @@ function scan(repo) {
   return flat;
 }
 
-function test(repo) {
+function init(prj, cmd, npmrc) {
+  // clean node_modules, pnpm-lock.yaml, .npmrc
+  reset(prj);
+
+  // write .npmrc
+  if (npmrc && Object.keys(npmrc).length > 0) {
+    let str = '';
+    for (let key in npmrc) {
+      str += `${key}=${npmrc[key]}\n`;
+    }
+    fs.writeFileSync(path.resolve(prj, '.npmrc'), str);
+  }
+
+  // install
+  execSync(cmd, { stdio: 'ignore', cwd: prj });
+
+  // scan deps from node_modules
+  return scan(prj);
+}
+
+function test(repo, npmrc) {
   const prj = path.resolve(__dirname, repo.name);
 
-  reset(prj)
-  execSync('pnpm -r i --ignore-pnpmfile', { stdio: 'ignore', cwd: prj });
-  const deps1 = scan(prj);
-
-  reset(prj)
-  execSync('pnpm -r i', { stdio: 'ignore', cwd: prj });
-  const deps2 = scan(prj);
+  const deps1 = init(prj, 'pnpm -r i --ignore-pnpmfile', npmrc);
+  const deps2 = init(prj, 'pnpm -r i', npmrc);
 
   // check
   const set1 = new Set(deps1);
@@ -73,9 +86,10 @@ function test(repo) {
   }
 
   if (set1.size === 0 && len1 === 0 && set2.size === 0 && len2 === 0) {
-    console.log(`✅ Success ${repo.name}`);
-  } else {
-    console.log(`❌ Failed ${repo.name}`);
+    console.log(`✅ Success ${repo.name}, npmrc=${JSON.stringify(npmrc)}`);
+  }
+  else {
+    console.log(`❌ Failed ${repo.name}, npmrc=${JSON.stringify(npmrc)}`);
     if (set1.size !== 0 || len1 !== 0) {
       console.log('⭕️ before expect: ' + JSON.stringify(repo.before, null, 2));
       console.log('❌ before actual: ' + JSON.stringify(deps1, null, 2));
@@ -91,6 +105,7 @@ function test(repo) {
 const repos = [
   {
     name: 'mono',
+    npmrc: [{}, { 'shared-workspace-lockfile': false }],
     before: [
       'mono/packages/pkg0/node_modules/mono-test-1',
       'mono/packages/pkg1/node_modules/mono-test-2',
@@ -107,7 +122,7 @@ const repos = [
       'mono/packages/pkg1/node_modules/mono-test-2',
       'mono/packages/pkg2/node_modules/solo-dev-dep',
       'mono/packages/pkg2/node_modules/solo-prd-dep',
-    ]
+    ],
   },
   {
     name: 'poly',
@@ -127,9 +142,22 @@ const repos = [
       'poly/packages/pkg1/node_modules/poly-test-2',
       'poly/packages/pkg2/node_modules/solo-dev-dep',
       'poly/packages/pkg2/node_modules/solo-prd-dep',
-    ]
+    ],
   }];
 
 for (const repo of repos) {
-  test(repo);
+  if (process.argv.includes('--reset')) {
+    console.log(`🔥 reset ${repo.name}`);
+    reset(path.resolve(__dirname, repo.name));
+  }
+  else {
+    if (repo.npmrc) {
+      for (const rc of repo.npmrc) {
+        test(repo, rc);
+      }
+    }
+    else {
+      test(repo, {});
+    }
+  }
 }

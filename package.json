@@ -1,8 +1,13 @@
 {
   "name": "pnpm-hoist-layer",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "use `.pnpmfile.cjs` to hoist deps by project like nuxt layer",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/trydofor/pnpm-hoist-layer.git"
@@ -19,7 +24,8 @@
   },
   "homepage": "https://github.com/trydofor/pnpm-hoist-layer#readme",
   "scripts": {
-    "test": "node test/test.js"
+    "test": "node test/test.js",
+    "reset": "node test/test.js --reset"
   },
   "packageManager": "pnpm@9.11.0"
 }

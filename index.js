@@ -1,7 +1,8 @@
-﻿const version = '1.1.1';
+﻿const version = '1.1.2';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
 const findEnvKey = 'HOIST_LAYER_FIND';
+const findPrcCmd = 'pnpm i -r --resolution-only';
 const debug = process.env['DEBUG'] != null;
 
 if (debug) console.log(`🪝 HoistLayer ${version} debug pid=${process.pid}`);
@@ -36,13 +37,38 @@ function findHoistLayer(pkg, map) {
   return hls != null ? pkg : { name: pkg.name, type: pkg.type, version: pkg.version };
 }
 
+function findWorkspace(rt, max = 5) {
+  const path = require('path');
+  const fs = require('fs');
+  let pt = rt;
+  for (let i = 0; i < max; i++) {
+    if (fs.existsSync(path.join(pt, 'pnpm-workspace.yaml'))) {
+      return pt;
+    }
+    pt = path.dirname(pt);
+  }
+  return null;
+}
+
 function loadHoistLayer(map, log) {
   const st = Date.now();
-  const cmd = 'pnpm i -r -s --resolution-only';
+  const cmd = debug ? findPrcCmd : `${findPrcCmd} -s`;
   log(`🪝 Starting loadHoistLayer(${version}) by ${cmd}`);
+  const cwd = process.cwd();
+  log(`🪝 current working=${cwd}`);
+  const wpd = findWorkspace(cwd, 5);
+  if (wpd != null) {
+    log(`🪝 workspaces root=${wpd}`);
+    if (wpd !== cwd) {
+      log(`❌ should run in workspaces root=${wpd}`);
+      log(`⭕️ layer hoisting will work, use --ignore-pnpmfile to debug`);
+      process.exit(1);
+    }
+  }
 
   const output = require('child_process').execSync(cmd,
     {
+      cwd: wpd == null ? cwd : wpd,
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, [findEnvKey]: 'true' },
     },
@@ -94,8 +120,15 @@ function readPackage(pkg, context) {
   if (debug) log(`readPackage-${process.pid}: pkg.name=${pkg.name}`);
 
   if (layerStatus.loading) {
-    loadHoistLayer(layerPkgMap, log);
-    layerStatus.loading = false;
+    try {
+      loadHoistLayer(layerPkgMap, log);
+      layerStatus.loading = false;
+    }
+    catch (err) {
+      log(`🐞 to debug 🐞 ${findPrcCmd} --ignore-pnpmfile`);
+      log(`❌ failed to loadHoistLayer: ${err.stack}`);
+      process.exit(1);
+    }
   }
 
   if (Array.isArray(pkg[packageKey])) {
@@ -103,7 +136,6 @@ function readPackage(pkg, context) {
   }
   return pkg;
 }
-
 
 module.exports = {
   version,

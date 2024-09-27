@@ -1,0 +1,19 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+pnpmfileChecksum: tp3fybht3gmmxq5il7v2sw3gbe
+
+importers:
+
+  .:
+    dependencies:
+      solo-prd-dep:
+        specifier: link:../../solo/prd
+        version: link:../../solo/prd
+    devDependencies:
+      solo-dev-dep:
+        specifier: link:../../solo/dev
+        version: link:../../solo/dev
