@@ -98,6 +98,7 @@ corepack use pnpm@latest
 * ✅ pnpm 9.9 works, but 🐞 [9.10, 9.11](https://github.com/pnpm/pnpm/issues/8538)
 * ✅ monorepo + shared-workspace-lockfile=false, but 🐞 the [default,true](https://github.com/vuejs/language-tools/issues/4860)
 * ✅ monorepo pnpm cli at top-dir, but 🐞 sub-dir (`packages/*`)
+* ✅ for CI keep `hoist-layer.json`, or 🐞 LOCKFILE ERROR
 
 ## Test and Diff
 

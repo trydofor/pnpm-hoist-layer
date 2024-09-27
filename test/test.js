@@ -10,7 +10,7 @@ function reset(repo) {
     if (dr === 'node_modules') {
       fs.rmSync(pt, { recursive: true });
     }
-    else if (dr === 'pnpm-lock.yaml' || dr === '.npmrc') {
+    else if (dr === 'pnpm-lock.yaml' || dr === '.npmrc' || dr === 'hoist-layer.json') {
       fs.unlinkSync(pt);
     }
     else if (dir.isDirectory()) {
@@ -43,9 +43,6 @@ function scan(repo) {
 }
 
 function init(prj, cmd, npmrc) {
-  // clean node_modules, pnpm-lock.yaml, .npmrc
-  reset(prj);
-
   // write .npmrc
   if (npmrc && Object.keys(npmrc).length > 0) {
     let str = '';
@@ -56,7 +53,7 @@ function init(prj, cmd, npmrc) {
   }
 
   // install
-  execSync(cmd, { stdio: 'ignore', cwd: prj });
+  execSync(cmd, { stdio: 'inherit', cwd: prj });
 
   // scan deps from node_modules
   return scan(prj);
@@ -65,8 +62,14 @@ function init(prj, cmd, npmrc) {
 function test(repo, npmrc) {
   const prj = path.resolve(__dirname, repo.name);
 
+  reset(prj);
   const deps1 = init(prj, 'pnpm -r i --ignore-pnpmfile', npmrc);
+
+  reset(prj);
   const deps2 = init(prj, 'pnpm -r i', npmrc);
+
+  // ci check
+  init(prj, 'pnpm -r i --frozen-lockfile', npmrc);
 
   // check
   const set1 = new Set(deps1);
