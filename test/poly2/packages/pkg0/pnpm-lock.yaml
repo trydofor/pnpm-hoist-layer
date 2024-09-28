@@ -1,0 +1,43 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+pnpmfileChecksum: tp3fybht3gmmxq5il7v2sw3gbe
+
+importers:
+
+  .:
+    dependencies:
+      solo-prd-dep:
+        specifier: link:../../solo/prd
+        version: link:../../solo/prd
+    devDependencies:
+      poly-test-1:
+        specifier: file:../pkg1
+        version: file:../pkg1
+      poly-test-2:
+        specifier: file:../pkg2
+        version: file:../pkg2
+      solo-dev-dep:
+        specifier: link:../../solo/dev
+        version: link:../../solo/dev
+
+packages:
+
+  poly-test-1@file:../pkg1:
+    resolution: {directory: ../pkg1, type: directory}
+
+  poly-test-2@file:../pkg2:
+    resolution: {directory: ../pkg2, type: directory}
+
+snapshots:
+
+  poly-test-1@file:../pkg1:
+    dependencies:
+      solo-prd-dep: link:../../solo/prd
+
+  poly-test-2@file:../pkg2:
+    dependencies:
+      solo-prd-dep: link:../../solo/prd

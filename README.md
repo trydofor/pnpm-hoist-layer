@@ -97,8 +97,9 @@ corepack use pnpm@latest
 
 * ✅ pnpm 9.9 works, but 🐞 [9.10, 9.11](https://github.com/pnpm/pnpm/issues/8538)
 * ✅ monorepo + shared-workspace-lockfile=false, but 🐞 the [default,true](https://github.com/vuejs/language-tools/issues/4860)
-* ✅ monorepo pnpm cli at top-dir, but 🐞 sub-dir (`packages/*`)
+* ✅ pnpm cli at top-dir, but 🐞 sub-dir (`packages/*`)
 * ✅ for CI keep `hoist-layer.json`, or 🐞 LOCKFILE ERROR
+* ✅ `hoistLayer` in top package.json is better than in sub's
 
 ## Test and Diff
 
@@ -107,10 +108,19 @@ node -v #v20.16.0
 pnpm -v #9.11.0
 
 pnpm test
-# ✅ Success mono, npmrc={}
-# ✅ Success mono, npmrc={"shared-workspace-lockfile":false}
-# ✅ Success poly, npmrc={}
+# ✅ Success mono1, npmrc={}
+# ✅ Success mono1, npmrc={"shared-workspace-lockfile":false}
+# ✅ Success mono2, npmrc={}
+# ✅ Success mono2, npmrc={"shared-workspace-lockfile":false}
+# ✅ Success poly1, npmrc={}
+# ✅ Success poly2, npmrc={}
 ```
+
+* mono1 - workspaces, sub `hoistLayer`
+* mono2 - workspaces, top `hoistLayer`
+* poly1 - multi-repo, sub `hoistLayer`
+* poly2 - multi-repo, top `hoistLayer`
+* solo - just the deps for test
 
 ### Mono before and after
 

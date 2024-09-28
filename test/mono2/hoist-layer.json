@@ -1,0 +1,21 @@
+[
+  {
+    "name": "mono-test-1",
+    "dependencies": {
+      "solo-prd-dep": "link:../../solo/prd"
+    },
+    "devDependencies": {
+      "mono-test-2": "workspace:*",
+      "solo-dev-dep": "link:../../solo/dev"
+    }
+  },
+  {
+    "name": "mono-test-2",
+    "dependencies": {
+      "solo-prd-dep": "link:../../solo/prd"
+    },
+    "devDependencies": {
+      "solo-dev-dep": "link:../../solo/dev"
+    }
+  }
+]

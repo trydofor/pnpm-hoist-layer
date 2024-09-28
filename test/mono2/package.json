@@ -1,0 +1,13 @@
+{
+  "name": "mono-test",
+  "version": "1.0.0",
+  "description": "pnpm monorepo (workspace) test",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "hoistLayer": [
+    "mono-test-1",
+    "mono-test-2"
+  ]
+}

@@ -2,11 +2,11 @@
 const path = require('path');
 const { execSync } = require('child_process');
 
-function reset(repo) {
-  const dirs = fs.readdirSync(repo, { withFileTypes: true });
+function reset(top) {
+  const dirs = fs.readdirSync(top, { withFileTypes: true });
   for (const dir of dirs) {
     const dr = dir.name;
-    const pt = path.join(repo, dr);
+    const pt = path.join(top, dr);
     if (dr === 'node_modules') {
       fs.rmSync(pt, { recursive: true });
     }
@@ -19,87 +19,93 @@ function reset(repo) {
   }
 }
 
-function scan(repo) {
+function scan(top, cut) {
   const flat = [];
-  const dirs = fs.readdirSync(repo, { withFileTypes: true });
+  const dirs = fs.readdirSync(top, { withFileTypes: true });
   for (const dir of dirs) {
     const dr = dir.name;
-    const pt = path.join(repo, dr);
+    const pt = path.join(top, dr);
     if (dr === 'node_modules') {
       const deps = fs.readdirSync(pt, { withFileTypes: true });
       for (const dep of deps) {
         if (!dep.name.startsWith('.')) {
-          const rp = path.join(pt, dep.name).substring(__dirname.length + 1);
+          const rp = path.join(pt, dep.name).substring(cut);
           flat.push(rp);
         }
       }
     }
     else if (dir.isDirectory()) {
-      flat.push(...scan(pt));
+      flat.push(...scan(pt, cut));
     }
   }
 
   return flat;
 }
 
-function init(prj, cmd, npmrc) {
+function init(top, cmd, rc) {
   // write .npmrc
-  if (npmrc && Object.keys(npmrc).length > 0) {
+  if (rc && Object.keys(rc).length > 0) {
     let str = '';
-    for (let key in npmrc) {
-      str += `${key}=${npmrc[key]}\n`;
+    for (let key in rc) {
+      str += `${key}=${rc[key]}\n`;
     }
-    fs.writeFileSync(path.resolve(prj, '.npmrc'), str);
+    fs.writeFileSync(path.resolve(top, '.npmrc'), str);
   }
 
   // install
-  execSync(cmd, { stdio: 'inherit', cwd: prj });
-
-  // scan deps from node_modules
-  return scan(prj);
+  execSync(cmd, { stdio: 'inherit', cwd: top });
 }
 
-function test(repo, npmrc) {
-  const prj = path.resolve(__dirname, repo.name);
+function test(prj, bef, aft, rc) {
+  console.log(`🧪 ${prj} ======================`);
+  console.log(`🧪 Testing ${prj}, npmrc=${JSON.stringify(rc)}`);
+  const top = path.resolve(__dirname, prj);
+  const cut = top.length + 1;
 
-  reset(prj);
-  const deps1 = init(prj, 'pnpm -r i --ignore-pnpmfile', npmrc);
+  console.log(`🧪 ${prj} plain > pnpm -r i --ignore-pnpmfile`);
+  reset(top);
+  init(top, 'pnpm -r i --ignore-pnpmfile', rc);
+  const rs1 = scan(top, cut);
 
-  reset(prj);
-  const deps2 = init(prj, 'pnpm -r i', npmrc);
+  console.log(`🧪 ${prj} hoist> pnpm -r i`);
+  reset(top);
+  init(top, 'pnpm -r i', rc);
+  const rs2 = scan(top, cut);
 
   // ci check
-  init(prj, 'pnpm -r i --frozen-lockfile', npmrc);
+  console.log(`🧪 ${prj} pnpm -r i --frozen-lockfile`);
+  init(top, 'pnpm -r i --frozen-lockfile', rc);
+  const rs3 = scan(top, cut);
 
   // check
-  const set1 = new Set(deps1);
-  let len1 = repo.before.length;
-  for (const dep of repo.before) {
-    if (set1.delete(dep)) {
-      len1--;
-    }
-  }
+  const strBef = JSON.stringify(bef.sort(), null, 2);
+  const strAft = JSON.stringify(aft.sort(), null, 2);
 
-  const set2 = new Set(deps2);
-  let len2 = repo.after.length;
-  for (const dep of repo.after) {
-    if (set2.delete(dep)) {
-      len2--;
-    }
-  }
+  const strRs1 = JSON.stringify(rs1.sort(), null, 2);
+  const strRs2 = JSON.stringify(rs2.sort(), null, 2);
+  const strRs3 = JSON.stringify(rs3.sort(), null, 2);
 
-  if (set1.size === 0 && len1 === 0 && set2.size === 0 && len2 === 0) {
-    console.log(`✅ Success ${repo.name}, npmrc=${JSON.stringify(npmrc)}`);
+  const okRs1 = strBef === strRs1;
+  const okRs2 = strAft === strRs2;
+  const okRs3 = strRs2 === strRs3;
+
+  if (okRs1 && okRs2 && okRs3) {
+    console.log(`✅ Success ${prj}, npmrc=${JSON.stringify(rc)}`);
+    console.log('\n');
   }
   else {
-    console.log(`❌ Failed ${repo.name}, npmrc=${JSON.stringify(npmrc)}`);
-    if (set1.size !== 0 || len1 !== 0) {
-      console.log('⭕️ before expect: ' + JSON.stringify(repo.before, null, 2));
-      console.log('❌ before actual: ' + JSON.stringify(deps1, null, 2));
+    console.log(`❌ Failed ${prj}, npmrc=${JSON.stringify(rc)}`);
+    if (!okRs1) {
+      console.log(`⭕️ plain expect: ${strBef}`);
+      console.log(`❌ plain actual: ${strRs1}`);
     }
-    if (set2.size !== 0 || len2 !== 0) {
-      console.log('⭕️  after expect: ' + JSON.stringify(repo.after, null, 2));
-      console.log('❌  after actual: ' + JSON.stringify(deps2, null, 2));
+    if (!okRs2) {
+      console.log(`⭕️ hoist expect: ${strAft}`);
+      console.log(`❌ hoist actual: ${strRs2}`);
+    }
+    if (!okRs3) {
+      console.log(`⭕️ hoist expect: ${strRs2}`);
+      console.log(`❌ hoist ci actual: ${strRs3}`);
     }
     process.exit(1);
   }
@@ -107,60 +113,60 @@ function test(repo, npmrc) {
 
 const repos = [
   {
-    name: 'mono',
+    path: ['mono1', 'mono2'],
     npmrc: [{}, { 'shared-workspace-lockfile': false }],
-    before: [
-      'mono/packages/pkg0/node_modules/mono-test-1',
-      'mono/packages/pkg1/node_modules/mono-test-2',
-      'mono/packages/pkg2/node_modules/solo-dev-dep',
-      'mono/packages/pkg2/node_modules/solo-prd-dep',
+    plain: [
+      'packages/pkg0/node_modules/mono-test-1',
+      'packages/pkg1/node_modules/mono-test-2',
+      'packages/pkg2/node_modules/solo-dev-dep',
+      'packages/pkg2/node_modules/solo-prd-dep',
     ],
-    after: [
-      'mono/packages/pkg0/node_modules/solo-dev-dep',
-      'mono/packages/pkg0/node_modules/solo-prd-dep',
-      'mono/packages/pkg0/node_modules/mono-test-1',
-      'mono/packages/pkg0/node_modules/mono-test-2',
-      'mono/packages/pkg1/node_modules/solo-dev-dep',
-      'mono/packages/pkg1/node_modules/solo-prd-dep',
-      'mono/packages/pkg1/node_modules/mono-test-2',
-      'mono/packages/pkg2/node_modules/solo-dev-dep',
-      'mono/packages/pkg2/node_modules/solo-prd-dep',
+    hoist: [
+      'packages/pkg0/node_modules/solo-dev-dep',
+      'packages/pkg0/node_modules/solo-prd-dep',
+      'packages/pkg0/node_modules/mono-test-1',
+      'packages/pkg0/node_modules/mono-test-2',
+      'packages/pkg1/node_modules/solo-dev-dep',
+      'packages/pkg1/node_modules/solo-prd-dep',
+      'packages/pkg1/node_modules/mono-test-2',
+      'packages/pkg2/node_modules/solo-dev-dep',
+      'packages/pkg2/node_modules/solo-prd-dep',
     ],
   },
   {
-    name: 'poly',
-    before: [
-      'poly/packages/pkg0/node_modules/poly-test-1',
-      'poly/packages/pkg1/node_modules/poly-test-2',
-      'poly/packages/pkg2/node_modules/solo-dev-dep',
-      'poly/packages/pkg2/node_modules/solo-prd-dep',
+    path: ['poly1', 'poly2'],
+    plain: [
+      'packages/pkg0/node_modules/poly-test-1',
+      'packages/pkg1/node_modules/poly-test-2',
+      'packages/pkg2/node_modules/solo-dev-dep',
+      'packages/pkg2/node_modules/solo-prd-dep',
     ],
-    after: [
-      'poly/packages/pkg0/node_modules/solo-dev-dep',
-      'poly/packages/pkg0/node_modules/solo-prd-dep',
-      'poly/packages/pkg0/node_modules/poly-test-1',
-      'poly/packages/pkg0/node_modules/poly-test-2',
-      'poly/packages/pkg1/node_modules/solo-dev-dep',
-      'poly/packages/pkg1/node_modules/solo-prd-dep',
-      'poly/packages/pkg1/node_modules/poly-test-2',
-      'poly/packages/pkg2/node_modules/solo-dev-dep',
-      'poly/packages/pkg2/node_modules/solo-prd-dep',
+    hoist: [
+      'packages/pkg0/node_modules/solo-dev-dep',
+      'packages/pkg0/node_modules/solo-prd-dep',
+      'packages/pkg0/node_modules/poly-test-1',
+      'packages/pkg0/node_modules/poly-test-2',
+      'packages/pkg1/node_modules/solo-dev-dep',
+      'packages/pkg1/node_modules/solo-prd-dep',
+      'packages/pkg1/node_modules/poly-test-2',
+      'packages/pkg2/node_modules/solo-dev-dep',
+      'packages/pkg2/node_modules/solo-prd-dep',
     ],
   }];
 
 for (const repo of repos) {
   if (process.argv.includes('--reset')) {
-    console.log(`🔥 reset ${repo.name}`);
-    reset(path.resolve(__dirname, repo.name));
+    for (const pt of repo.path) {
+      console.log(`🔥 reset ${pt}`);
+      reset(path.resolve(__dirname, pt));
+    }
   }
   else {
-    if (repo.npmrc) {
-      for (const rc of repo.npmrc) {
-        test(repo, rc);
+    for (const pt of repo.path) {
+      const rcs = repo.npmrc || [{}];
+      for (const rc of rcs) {
+        test(pt, repo.plain, repo.hoist, rc);
       }
-    }
-    else {
-      test(repo, {});
     }
   }
 }

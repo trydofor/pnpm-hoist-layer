@@ -1,4 +1,4 @@
-﻿const version = '1.1.3';
+﻿const version = '1.1.4';
 const lockFile = 'hoist-layer.json';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
@@ -12,13 +12,14 @@ const fs = require('fs');
 if (debug) console.log(`🪝 HoistLayer ${version} debug pid=${process.pid}`);
 
 function hoistLayerDeps(pkg, map, log) {
-  const deps = [...Object.keys(pkg.dependencies), ...Object.keys(pkg.devDependencies)];
-  for (const dep of deps) {
-    const idp = map.get(dep);
-    if (idp != null) {
-      log(`🪝 to ${pkg.name}, hoist ${dep}`);
-      pkg.dependencies = { ...pkg.dependencies, ...idp.dependencies };
-      pkg.devDependencies = { ...pkg.devDependencies, ...idp.devDependencies };
+  for (const layer of map.values()) {
+    const deps = pkg.dependencies || {};
+    const devDeps = pkg.devDependencies || {};
+    const name = layer.name;
+    if (deps[name] != null || devDeps[name] != null) {
+      log(`🪝 to ${pkg.name}, hoist ${name}`);
+      pkg.dependencies = { ...deps, ...layer.dependencies };
+      pkg.devDependencies = { ...devDeps, ...layer.devDependencies };
     }
   }
 }
@@ -66,9 +67,12 @@ function loadLayerCache(cwd, map, log) {
       log(`❌ ${lockFile} is not an array`);
       process.exit(1);
     }
+
     for (const pkg of pkgArr) {
       map.set(pkg.name, pkg);
     }
+
+    if (debug) log(`🪝 loaded from ${lockFile} with ${map.size} packages`);
     return;
   }
 
@@ -167,9 +171,7 @@ function readPackage(pkg, context) {
     layerStatus.loading = false;
   }
 
-  if (Array.isArray(pkg[packageKey])) {
-    hoistLayerDeps(pkg, layerPkgMap, log);
-  }
+  hoistLayerDeps(pkg, layerPkgMap, log);
   return pkg;
 }
 
