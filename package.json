@@ -1,6 +1,6 @@
 {
   "name": "pnpm-hoist-layer",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "use `.pnpmfile.cjs` to hoist deps by project like nuxt layer",
   "main": "index.js",
   "files": [

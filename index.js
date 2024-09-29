@@ -1,4 +1,5 @@
-﻿const version = '1.1.4';
+﻿// module.exports = require('pnpm-hoist-layer');
+const version = '1.1.5';
 const lockFile = 'hoist-layer.json';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
@@ -11,35 +12,45 @@ const fs = require('fs');
 
 if (debug) console.log(`🪝 HoistLayer ${version} debug pid=${process.pid}`);
 
-function hoistLayerDeps(pkg, map, log) {
-  for (const layer of map.values()) {
-    const deps = pkg.dependencies || {};
-    const devDeps = pkg.devDependencies || {};
-    const name = layer.name;
-    if (deps[name] != null || devDeps[name] != null) {
-      log(`🪝 to ${pkg.name}, hoist ${name}`);
-      pkg.dependencies = { ...deps, ...layer.dependencies };
-      pkg.devDependencies = { ...devDeps, ...layer.devDependencies };
+function findHoistLayer(pkg, map) {
+  const name = pkg.name;
+  const hoistLayer = pkg[packageKey];
+  const oldPkg = map.get(name);
+
+  let skip = hoistLayer == null;
+
+  if (oldPkg == null || oldPkg === true) {
+    map.set(name, false);
+    console.log(findOutKey + JSON.stringify({
+      name,
+      dependencies: pkg.dependencies || {},
+      devDependencies: pkg.devDependencies || {},
+      hoistLayer,
+    }));
+
+    if (oldPkg == null) {
+      for (const dep of Object.keys(pkg.dependencies || {})) {
+        map.set(dep, true);
+      }
+      for (const dep of Object.keys(pkg.devDependencies || {})) {
+        map.set(dep, true);
+      }
+      skip = false;
     }
   }
-}
 
-function findHoistLayer(pkg, map) {
-  const hls = pkg[packageKey];
-
-  const pn = pkg.name;
-  if (!map.has(pn)) {
-    const npk = {
-      name: pn,
-      dependencies: pkg.dependencies,
-      devDependencies: pkg.devDependencies,
-      hoistLayer: hls,
-    };
-    map.set(pn, npk);
-    console.log(findOutKey + JSON.stringify(npk));
+  if (hoistLayer != null) {
+    for (const ly of hoistLayer) {
+      map.set(ly, true);
+    }
   }
 
-  return hls != null ? pkg : { name: pkg.name, type: pkg.type, version: pkg.version };
+  if (skip) {
+    if (debug) console.log(`🪝 findHoistLayer-${process.pid}: skip follow ${name}`);
+    return { name, type: pkg.type, version: pkg.version };
+  }
+
+  return pkg;
 }
 
 function findPnpmFile(rt, max = 5) {
@@ -57,7 +68,10 @@ function loadLayerCache(cwd, map, log) {
   const locked = process.argv.includes('--no-frozen-lockfile') ? false : process.argv.includes('--frozen-lockfile');
   const lockPath = path.join(cwd, lockFile);
 
+  // from cache file
   if (locked) {
+    log(`🪝 Starting loadLayerCache(${version}) by ${lockFile}`);
+
     if (!fs.existsSync(lockPath)) {
       log(`❌ ${lockFile} not found, use --no-frozen-lockfile to generate`);
       process.exit(1);
@@ -72,12 +86,14 @@ function loadLayerCache(cwd, map, log) {
       map.set(pkg.name, pkg);
     }
 
-    if (debug) log(`🪝 loaded from ${lockFile} with ${map.size} packages`);
     return;
   }
 
+  // from child process
+  const cmd = debug ? findPrcCmd : `${findPrcCmd} -s`;
+  log(`🪝 Starting loadLayerCache(${version}) by ${cmd}`);
   try {
-    const output = require('child_process').execSync(findPrcCmd,
+    const output = require('child_process').execSync(cmd,
       {
         cwd,
         stdio: ['ignore', 'pipe', 'inherit'],
@@ -94,28 +110,54 @@ function loadLayerCache(cwd, map, log) {
       map.set(layer.name, layer);
     };
 
-    const hls = new Set(); // hoistLayer names
+    const layersNeed = new Set(); // hoistLayer defined in current workspace/projects
     for (const pkg of map.values()) {
       const hl = pkg.hoistLayer;
       if (hl == null) continue;
       for (const pn of hl) {
-        hls.add(pn);
+        layersNeed.add(pn);
       }
     }
 
-    if (debug) log(`loadHoistLayer-${process.pid}: hoistLayer=${JSON.stringify(Array.from(hls))}`);
+    if (debug) log(`loadHoistLayer-${process.pid}: need hoistLayer=${JSON.stringify(Array.from(layersNeed))}`);
 
-    const rms = new Set(Array.from(map.keys()));
-    for (const hl of rms) {
-      if (!hls.has(hl)) {
-        if (debug) log(`loadHoistLayer-${process.pid}: removing ${hl}`);
-        map.delete(hl);
+    const directDeps = new Set(Array.from(map.keys()));
+    for (const dk of directDeps) {
+      if (!layersNeed.has(dk)) {
+        if (debug) log(`loadHoistLayer-${process.pid}: removing non-layer package= ${dk}`);
+        map.delete(dk);
       }
     }
 
+    let miss = 0;
+    for (const ln of layersNeed) {
+      if (!map.has(ln)) {
+        miss++;
+        log(`❌ loadHoistLayer-${process.pid}: missing layer package= ${ln}`);
+      }
+    }
+
+    if (miss > 0) {
+      log(`🔆 the missing layer should be explicitly defined, one of the following,`);
+      log(`🔆 (1) one top-project "${packageKey}" + sub's deps in "optionalDependencies" `);
+      log(`🔆 (2) every sub "${packageKey}" + its deps in "*Dependencies"`);
+      process.exit(1);
+    }
+
+    // flat layers
     for (const pkg of map.values()) {
-      hoistLayerDeps(pkg, map, log);
+      for (const name of map.keys()) {
+        if (pkg.dependencies[name] == null && pkg.devDependencies[name] == null) continue;
+        const layer = map.get(name);
+        log(`🔀 to ${pkg.name} merge ${name}`);
+        if (debug) log(`🔀 dependencies=${JSON.stringify(pkg.dependencies, null, 2)}, merge=${JSON.stringify(layer.dependencies, null, 2)}`);
+        pkg.dependencies = { ...pkg.dependencies, ...layer.dependencies };
+
+        if (debug) log(`🔀 devDependencies=${JSON.stringify(pkg.devDependencies, null, 2)}, merge=${JSON.stringify(layer.devDependencies, null, 2)}`);
+        pkg.devDependencies = { ...pkg.devDependencies, ...layer.devDependencies };
+      }
     }
+
     // write to lock file
     const sortedArr = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
     fs.writeFileSync(lockPath, JSON.stringify(sortedArr, null, 2));
@@ -135,8 +177,6 @@ function loadLayerCache(cwd, map, log) {
 
 function loadHoistLayer(map, log) {
   const st = Date.now();
-  // const cmd = debug ? findPrcCmd : `${findPrcCmd} -s`;
-  // log(`🪝 Starting loadHoistLayer(${version}) by ${cmd}`);
   const cwd = process.cwd();
   log(`🪝 current working=${cwd}`);
   const pfd = findPnpmFile(cwd, 5);
@@ -156,12 +196,16 @@ function loadHoistLayer(map, log) {
   log(`🪝 Finished loadHoistLayer in ${ct}s`);
 }
 
-const layerPkgMap = new Map(); // pkg.name -> {name, dependencies, devDependencies, hoistLayer? }
+// findHoistLayer: pkg.name -> boolean, null:first, true:deps, false:skip
+// {name, dependencies, devDependencies, hoistLayer? }
+const layerPkgMap = new Map();
 const layerStatus = { finding: process.env[findEnvKey] != null, loading: true };
 
 //// the hook ////
 function readPackage(pkg, context) {
-  if (layerStatus.finding) return findHoistLayer(pkg, layerPkgMap);
+  if (layerStatus.finding) {
+    return findHoistLayer(pkg, layerPkgMap);
+  }
 
   const log = debug ? console.log : context.log;
   if (debug) log(`readPackage-${process.pid}: pkg.name=${pkg.name}`);
@@ -171,7 +215,25 @@ function readPackage(pkg, context) {
     layerStatus.loading = false;
   }
 
-  hoistLayerDeps(pkg, layerPkgMap, log);
+  // reuse merged layer deps (no devDependencies while only `install`)
+  const thisLayer = layerPkgMap.get(pkg.name);
+  if (thisLayer != null) {
+    pkg.dependencies = { ...pkg.dependencies, ...thisLayer.dependencies };
+    pkg.devDependencies = { ...pkg.devDependencies, ...thisLayer.devDependencies };
+    log(`⬆️ to ${pkg.name} reuse itself`);
+    return pkg;
+  }
+
+  // hoist deps. no devDependencies while installing, unlike resovling
+  const pkgAndDeps = [Object.keys(pkg.dependencies), ...Object.keys(pkg.devDependencies)];
+  for (const dep of pkgAndDeps) {
+    const layer = layerPkgMap.get(dep);
+    if (layer == null) continue;
+    log(`⬆️ to ${pkg.name} hoist ${layer.name}`);
+    pkg.dependencies = { ...pkg.dependencies, ...layer.dependencies };
+    pkg.devDependencies = { ...pkg.devDependencies, ...layer.devDependencies };
+  }
+
   return pkg;
 }
 

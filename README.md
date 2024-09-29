@@ -1,16 +1,21 @@
 # 🪝 pnpm-hoist-layer
 
-use `.pnpmfile.cjs` to hoist deps by project like
-[nuxt layer](https://nuxt.com/docs/getting-started/layers)
+use `.pnpmfile.cjs` to hoist deps/devDeps to project like
+[Nuxt Layer](https://nuxt.com/docs/getting-started/layers)
 
 ## Purpose
 
 pnpm [public-hoist-pattern](https://pnpm.io/npmrc#public-hoist-pattern)
-only affects to the top-project (virtual store), not the sub-projects,
-as Nuxt layer, we do not want to copy deps/devDeps from here to there,
-so we want to hoist the layer's deps to the project.
+only affects to the top-project (virtual store), not the sub-projects, therefore,
 
-e.g. `common->@nuxt`, `mobile->common` but no `@nuxt`, after hoist layer,
+* relative path issues may occur
+* copy same deps/devDeps from here to there
+* config too many hoist-pattern
+
+how to auto add the dep's deps/devDeps to my project?
+i.e. give your deps/devDeps to me when i deps on you.
+
+e.g. `mobile->common`, `common->@nuxt`, after hoist layer,
 
 ```diff
 ├── common
@@ -25,15 +30,10 @@ e.g. `common->@nuxt`, `mobile->common` but no `@nuxt`, after hoist layer,
 
 ## Usage
 
-add the `layer` deps to the following fields in package.json
+(1) add `layer` to the package.json
 
-* `hoistLayer` - to hoist the deps of the layer
-* `dependencies` or `devDependencies` - for the package manager
-* do NOT use [`link:`](https://pnpm.io/cli/link) - do NOT hook
-* do NOT indirect deps - `--resolution-only` do NOT resolve
-
-the deps are resolved from tree top to bottom,
-but hoist from tree bottom to top, it's a reverse process.
+* `hoistLayer` - to define which is the layer
+* `*dependencies` - for package resolution
 
 ```diff
   "devDependencies": {
@@ -44,10 +44,20 @@ but hoist from tree bottom to top, it's a reverse process.
 + ]
 ```
 
-hook and hoist deps by layers project
+(2) write `.pnpmfile.cjs` to hook
 
 ```bash
-## 🏠 opt-1: global install and require
+## 💾 opt-1: project install and require
+pnpm add -D pnpm-hoist-layer
+cat > .pnpmfile.cjs << 'EOF'
+module.exports = require('pnpm-hoist-layer');
+EOF
+
+## 📦 opt-2: write content to .pnpmfile.cjs
+curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
+/pnpm-hoist-layer/main/index.js
+
+## 🏠 opt-3: global install and require
 pnpm add -g pnpm-hoist-layer
 cat > .pnpmfile.cjs << 'EOF'
 module.exports = (() => {
@@ -60,17 +70,20 @@ module.exports = (() => {
   }
 })();
 EOF
-
-## 📦 opt-2: write content to .pnpmfile.cjs
-curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
-/pnpm-hoist-layer/main/index.js
-
-## 💾 opt-3: project install and require
-pnpm add pnpm-hoist-layer
-cat > .pnpmfile.cjs << 'EOF'
-module.exports = require('pnpm-hoist-layer');
-EOF
 ```
+
+## Known Issues
+
+the deps tree are resolved from top to bottom, and hoist from bottom to top, it's a reverse process.
+
+* ✅ pnpm 9.9 works, but 🐞 [9.10, 9.11](https://github.com/pnpm/pnpm/issues/8538)
+* ✅ monorepo + shared-workspace-lockfile=false, but 🐞 the [default,true](https://github.com/vuejs/language-tools/issues/4860)
+* ✅ pnpm cli at top-dir, but 🐞 sub-dir (`packages/*`)
+* ✅ for CI keep `hoist-layer.json`, or 🐞 LOCKFILE ERROR
+* ✅ `hoistLayer` + `*Dependencies`, or 🐞 [Missing order](https://github.com/trydofor/pnpm-hoist-layer/issues/2)
+* ✅ `--resolution-only` resolve `devDependencies`, but ❗ `pnpm i` NOT.
+* ❗ do NOT use [`link:`](https://pnpm.io/cli/link), it do NOT hook
+* ❗ do NOT deps indirectly , 2+ level deps NOT resolved
 
 ## Useful Commands
 
@@ -92,14 +105,6 @@ pnpm -g add pnpm-hoist-layer
 corepack enable pnpm
 corepack use pnpm@latest
 ```
-
-## Known Issues
-
-* ✅ pnpm 9.9 works, but 🐞 [9.10, 9.11](https://github.com/pnpm/pnpm/issues/8538)
-* ✅ monorepo + shared-workspace-lockfile=false, but 🐞 the [default,true](https://github.com/vuejs/language-tools/issues/4860)
-* ✅ pnpm cli at top-dir, but 🐞 sub-dir (`packages/*`)
-* ✅ for CI keep `hoist-layer.json`, or 🐞 LOCKFILE ERROR
-* ✅ `hoistLayer` in top package.json is better than in sub's
 
 ## Test and Diff
 
