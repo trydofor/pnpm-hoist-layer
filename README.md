@@ -108,6 +108,14 @@ corepack use pnpm@latest
 
 ## Test and Diff
 
+```tree
+Glossary
+├── multi pkg, one git (often called "monorepo")
+│   ├── with workspace (termed as "mono")
+│   └── without workspace (termed as "poly")
+└── one pkg, one git (termed as "solo")
+```
+
 ```bash
 node -v #v20.16.0
 pnpm -v #9.11.0
@@ -121,11 +129,11 @@ pnpm test
 # ✅ Success poly2, npmrc={}
 ```
 
-* mono1 - workspaces, sub `hoistLayer`
-* mono2 - workspaces, top `hoistLayer`
-* poly1 - multi-repo, sub `hoistLayer`
-* poly2 - multi-repo, top `hoistLayer`
-* solo - just the deps for test
+* mono1 - multi-pkg + workspace, sub `hoistLayer`
+* mono2 - multi-pkg + workspace, top `hoistLayer`
+* poly1 - multi-pkg, sub `hoistLayer`
+* poly2 - multi-pkg, top `hoistLayer`
+* solo - single pkg as deps for test
 
 ### Mono before and after
 
