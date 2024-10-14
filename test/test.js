@@ -67,9 +67,9 @@ function test(prj, bef, aft, rc) {
   init(top, 'pnpm -r i --ignore-pnpmfile', rc);
   const rs1 = scan(top, cut);
 
-  console.log(`🧪 ${prj} hoist> pnpm -r i`);
+  console.log(`🧪 ${prj} hoist> pnpm -r i --no-frozen-lockfile`);
   reset(top);
-  init(top, 'pnpm -r i', rc);
+  init(top, 'pnpm -r i --no-frozen-lockfile', rc);
   const rs2 = scan(top, cut);
 
   // ci check

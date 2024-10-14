@@ -1,0 +1,53 @@
+﻿name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'test ?'
+        default: true
+        type: boolean
+      publish:
+        description: 'publish?'
+        default: true
+        type: boolean
+
+jobs:
+  release:
+    name: Release to Npmjs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout ${{ github.ref_name }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/cache@v4
+        name: Cache pnpm store
+        id: cache-sdk-repo
+        with:
+          path: |
+            ~/.asdf/
+            ~/.local/share/pnpm/store/
+          key: asdf-store-${{ runner.os }}
+
+      - name: Install asdf & tools
+        uses: asdf-vm/actions/install@v3
+        with:
+          skip_install: ${{ steps.cache-sdk-repo.outputs.cache-hit == 'true' }}
+
+      - name: Testing
+        if: github.event.inputs.test == 'true'
+        run: |
+          pnpm test
+
+      - name: Publish
+        if: github.event.inputs.publish == 'true'
+        run: |
+          cat > "$HOME/.npmrc" << EOF
+          //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
+          EOF
+          pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
