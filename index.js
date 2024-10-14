@@ -114,6 +114,8 @@ function loadLayerCache(cwd, map, log) {
     for (const pkg of map.values()) {
       const hl = pkg.hoistLayer;
       if (hl == null) continue;
+
+      layersNeed.add(pkg.name);
       for (const pn of hl) {
         layersNeed.add(pn);
       }

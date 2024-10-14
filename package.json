@@ -27,5 +27,5 @@
     "test": "node test/test.js",
     "reset": "node test/test.js --reset"
   },
-  "packageManager": "pnpm@9.9.0"
+  "packageManager": "pnpm@9.12.1"
 }

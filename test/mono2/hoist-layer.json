@@ -17,5 +17,14 @@
     "devDependencies": {
       "solo-dev-dep": "link:../../solo/dev"
     }
+  },
+  {
+    "name": "mono-test-9",
+    "dependencies": {},
+    "devDependencies": {},
+    "hoistLayer": [
+      "mono-test-1",
+      "mono-test-2"
+    ]
   }
 ]

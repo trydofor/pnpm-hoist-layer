@@ -1,5 +1,19 @@
 [
   {
+    "name": "poly-test-0",
+    "dependencies": {
+      "solo-prd-dep": "link:../../solo/prd"
+    },
+    "devDependencies": {
+      "poly-test-1": "file:../pkg1",
+      "poly-test-2": "file:../pkg2",
+      "solo-dev-dep": "link:../../solo/dev"
+    },
+    "hoistLayer": [
+      "poly-test-1"
+    ]
+  },
+  {
     "name": "poly-test-1",
     "dependencies": {
       "solo-prd-dep": "link:../../solo/prd"

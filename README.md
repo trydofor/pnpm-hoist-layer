@@ -76,14 +76,15 @@ EOF
 
 the deps tree are resolved from top to bottom, and hoist from bottom to top, it's a reverse process.
 
-* ✅ pnpm 9.9 works, but 🐞 [9.10, 9.11](https://github.com/pnpm/pnpm/issues/8538)
-* ✅ monorepo + shared-workspace-lockfile=false, but 🐞 the [default,true](https://github.com/vuejs/language-tools/issues/4860)
+* ✅ shared-workspace-lockfile=false, may 🐞 [peers](https://github.com/pnpm/pnpm/issues/8538)
+* ✅ monorepo + shared-workspace-lockfile=false, but 🐞 [default=true](https://github.com/vuejs/language-tools/issues/4860)
 * ✅ pnpm cli at top-dir, but 🐞 sub-dir (`packages/*`)
 * ✅ for CI keep `hoist-layer.json`, or 🐞 LOCKFILE ERROR
 * ✅ `hoistLayer` + `*Dependencies`, or 🐞 [Missing order](https://github.com/trydofor/pnpm-hoist-layer/issues/2)
 * ✅ `--resolution-only` resolve `devDependencies`, but ❗ `pnpm i` NOT.
 * ❗ do NOT use [`link:`](https://pnpm.io/cli/link), it do NOT hook
 * ❗ do NOT deps indirectly , 2+ level deps NOT resolved
+* ❗ this is a [bad practice](https://github.com/pnpm/pnpm/issues/8588)
 
 ## Useful Commands
 
@@ -118,7 +119,7 @@ Glossary
 
 ```bash
 node -v #v20.16.0
-pnpm -v #9.11.0
+pnpm -v #9.12.1
 
 pnpm test
 # ✅ Success mono1, npmrc={}
