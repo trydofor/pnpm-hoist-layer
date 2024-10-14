@@ -1,5 +1,5 @@
 ﻿// module.exports = require('pnpm-hoist-layer');
-const version = '1.1.5';
+const version = '1.1.6';
 const lockFile = 'hoist-layer.json';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
@@ -190,8 +190,10 @@ function loadHoistLayer(map, log) {
   }
 
   loadLayerCache(pfd == null ? cwd : pfd, map, log);
-
-  log('🪝 Found HoistLayer: ' + JSON.stringify(Array.from(map.keys())));
+  let i = 1;
+  for (const layer of map.values()) {
+    log(`🪝 HoistLayer[${i++}] name=${layer.name} (deps=${Object.keys(layer.dependencies).length},devDeps=${Object.keys(layer.devDependencies).length})`);
+  }
   const ct = ((Date.now() - st) / 1000).toFixed(2);
   log(`🪝 Finished loadHoistLayer in ${ct}s`);
 }
@@ -218,20 +220,28 @@ function readPackage(pkg, context) {
   // reuse merged layer deps (no devDependencies while only `install`)
   const thisLayer = layerPkgMap.get(pkg.name);
   if (thisLayer != null) {
-    pkg.dependencies = { ...pkg.dependencies, ...thisLayer.dependencies };
-    pkg.devDependencies = { ...pkg.devDependencies, ...thisLayer.devDependencies };
-    log(`⬆️ to ${pkg.name} reuse itself`);
+    pkg.dependencies = { ...thisLayer.dependencies };
+    pkg.devDependencies = { ...thisLayer.devDependencies };
+    const deps2 = Object.keys(thisLayer.dependencies).length;
+    const devs2 = Object.keys(thisLayer.devDependencies).length;
+    log(`⬆️ to ${pkg.name} hoist itself (deps=${deps2},devDeps=${devs2})`);
     return pkg;
   }
 
-  // hoist deps. no devDependencies while installing, unlike resovling
+  // hoist deps. no devDependencies while installing, unlike resolving
   const pkgAndDeps = [Object.keys(pkg.dependencies), ...Object.keys(pkg.devDependencies)];
   for (const dep of pkgAndDeps) {
     const layer = layerPkgMap.get(dep);
     if (layer == null) continue;
-    log(`⬆️ to ${pkg.name} hoist ${layer.name}`);
+    const deps0 = Object.keys(pkg.dependencies).length;
+    const devs0 = Object.keys(pkg.devDependencies).length;
     pkg.dependencies = { ...pkg.dependencies, ...layer.dependencies };
     pkg.devDependencies = { ...pkg.devDependencies, ...layer.devDependencies };
+    const deps1 = Object.keys(layer.dependencies).length;
+    const devs1 = Object.keys(layer.devDependencies).length;
+    const deps2 = Object.keys(pkg.dependencies).length;
+    const devs2 = Object.keys(pkg.devDependencies).length;
+    log(`⬆️ to ${pkg.name} hoist ${layer.name} (deps=${deps2},devDeps=${devs2})=(${deps0},${devs0})+(${deps1},${devs1})`);
   }
 
   return pkg;
