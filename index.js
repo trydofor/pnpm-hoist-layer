@@ -1,5 +1,5 @@
 ﻿// module.exports = require('pnpm-hoist-layer');
-const version = '1.1.6';
+const version = '1.1.7';
 const lockFile = 'hoist-layer.json';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
@@ -64,6 +64,10 @@ function findPnpmFile(rt, max = 5) {
   return null;
 }
 
+function sortObject(obj) {
+  return Object.fromEntries(Object.entries(obj).sort((a, b) => a[0].localeCompare(b[0])))
+}
+
 function loadLayerCache(cwd, map, log) {
   const locked = process.argv.includes('--no-frozen-lockfile') ? false : process.argv.includes('--frozen-lockfile');
   const lockPath = path.join(cwd, lockFile);
@@ -110,29 +114,33 @@ function loadLayerCache(cwd, map, log) {
       map.set(layer.name, layer);
     };
 
-    const layersNeed = new Set(); // hoistLayer defined in current workspace/projects
+    const layerRef = new Set(); // hoistLayer defined in current workspace/projects
     for (const pkg of map.values()) {
       const hl = pkg.hoistLayer;
       if (hl == null) continue;
 
-      layersNeed.add(pkg.name);
+      layerRef.add(pkg.name);
       for (const pn of hl) {
-        layersNeed.add(pn);
+        layerRef.add(pn);
       }
     }
 
-    if (debug) log(`loadHoistLayer-${process.pid}: need hoistLayer=${JSON.stringify(Array.from(layersNeed))}`);
+    if (debug) {
+      log(`loadHoistLayer-${process.pid}: hoistLayer=${JSON.stringify(Array.from(layerRef))}`);
+    } else {
+      log(`🪝 hoist=${JSON.stringify(Array.from(layerRef))}`);
+    }
 
     const directDeps = new Set(Array.from(map.keys()));
     for (const dk of directDeps) {
-      if (!layersNeed.has(dk)) {
+      if (!layerRef.has(dk)) {
         if (debug) log(`loadHoistLayer-${process.pid}: removing non-layer package= ${dk}`);
         map.delete(dk);
       }
     }
 
     let miss = 0;
-    for (const ln of layersNeed) {
+    for (const ln of layerRef) {
       if (!map.has(ln)) {
         miss++;
         log(`❌ loadHoistLayer-${process.pid}: missing layer package= ${ln}`);
@@ -146,23 +154,51 @@ function loadLayerCache(cwd, map, log) {
       process.exit(1);
     }
 
-    // flat layers
-    for (const pkg of map.values()) {
-      for (const name of map.keys()) {
-        if (pkg.dependencies[name] == null && pkg.devDependencies[name] == null) continue;
-        const layer = map.get(name);
-        log(`🔀 to ${pkg.name} merge ${name}`);
-        if (debug) log(`🔀 dependencies=${JSON.stringify(pkg.dependencies, null, 2)}, merge=${JSON.stringify(layer.dependencies, null, 2)}`);
-        pkg.dependencies = { ...pkg.dependencies, ...layer.dependencies };
+    // flat layers. pnpm may disorder to deps tree,
+    // e.g.["mono-test-1","mono-test-2","mono-test-0"], ["mono-test-0","mono-test-1","mono-test-2"]
+    const layerArr = Array.from(map.values());
+    for (const pkg of layerArr) {
+      const lys = new Map(map);
+      let udp;
+      do {
+        udp = false;
+        for (const [nm, ly] of lys) {
+          if (pkg.dependencies[nm] == null && pkg.devDependencies[nm] == null) continue;
 
-        if (debug) log(`🔀 devDependencies=${JSON.stringify(pkg.devDependencies, null, 2)}, merge=${JSON.stringify(layer.devDependencies, null, 2)}`);
-        pkg.devDependencies = { ...pkg.devDependencies, ...layer.devDependencies };
-      }
+          if (debug) {
+            log(`flat ${pkg.name} deps=${JSON.stringify(pkg.dependencies, null, 2)}, with=${JSON.stringify(ly.dependencies, null, 2)}`);
+            log(`flat ${pkg.name} devDeps=${JSON.stringify(pkg.devDependencies, null, 2)}, with=${JSON.stringify(ly.devDependencies, null, 2)}`);
+          }
+
+          for (const [k, v] of Object.entries(ly.dependencies)) {
+            if (pkg.dependencies[k] != null) continue;
+            pkg.dependencies[k] = v;
+            udp = true;
+          }
+          for (const [k, v] of Object.entries(ly.devDependencies)) {
+            if (pkg.devDependencies[k] != null) continue;
+            pkg.devDependencies[k] = v;
+            udp = true;
+          }
+
+          if (udp) {
+            lys.delete(nm);
+            log(`🔀 flat ${pkg.name} with ${nm}`);
+          }
+        }
+      } while (udp);
     }
 
+    // sort deps by name
+    for (const pkg of layerArr) {
+      pkg.dependencies = sortObject(pkg.dependencies);
+      pkg.devDependencies = sortObject(pkg.devDependencies);
+    }
+    // sort layer by name
+    layerArr.sort((a, b) => a.name.localeCompare(b.name));
+
     // write to lock file
-    const sortedArr = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-    fs.writeFileSync(lockPath, JSON.stringify(sortedArr, null, 2));
+    fs.writeFileSync(lockPath, JSON.stringify(layerArr, null, 2));
   }
   catch (err) {
     log(`🐞 to debug 🐞 ${findPrcCmd} --ignore-pnpmfile`);
@@ -226,7 +262,7 @@ function readPackage(pkg, context) {
     pkg.devDependencies = { ...thisLayer.devDependencies };
     const deps2 = Object.keys(thisLayer.dependencies).length;
     const devs2 = Object.keys(thisLayer.devDependencies).length;
-    log(`⬆️ to ${pkg.name} hoist itself (deps=${deps2},devDeps=${devs2})`);
+    log(`⬆ to ${pkg.name} hoist itself (deps=${deps2},devDeps=${devs2})`);
     return pkg;
   }
 
@@ -243,7 +279,7 @@ function readPackage(pkg, context) {
     const devs1 = Object.keys(layer.devDependencies).length;
     const deps2 = Object.keys(pkg.dependencies).length;
     const devs2 = Object.keys(pkg.devDependencies).length;
-    log(`⬆️ to ${pkg.name} hoist ${layer.name} (deps=${deps2},devDeps=${devs2})=(${deps0},${devs0})+(${deps1},${devs1})`);
+    log(`⬆ to ${pkg.name} hoist ${layer.name} (deps=${deps2},devDeps=${devs2})=(${deps0},${devs0})+(${deps1},${devs1})`);
   }
 
   return pkg;

@@ -40,7 +40,7 @@ jobs:
       - name: Testing
         if: github.event.inputs.test == 'true'
         run: |
-          pnpm test
+          DEBUG=1 pnpm test
 
       - name: Publish
         if: github.event.inputs.publish == 'true'

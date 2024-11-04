@@ -2,7 +2,7 @@
 const path = require('path');
 const { execSync } = require('child_process');
 
-function reset(top) {
+function reset(top, dev = true) {
   const dirs = fs.readdirSync(top, { withFileTypes: true });
   for (const dir of dirs) {
     const dr = dir.name;
@@ -10,11 +10,14 @@ function reset(top) {
     if (dr === 'node_modules') {
       fs.rmSync(pt, { recursive: true });
     }
-    else if (dr === 'pnpm-lock.yaml' || dr === '.npmrc' || dr === 'hoist-layer.json') {
+    else if (dr === '.npmrc') {
+      fs.unlinkSync(pt);
+    }
+    else if (dev && (dr === 'pnpm-lock.yaml' || dr === 'hoist-layer.json')) {
       fs.unlinkSync(pt);
     }
     else if (dir.isDirectory()) {
-      reset(pt);
+      reset(pt, dev);
     }
   }
 }
@@ -63,17 +66,18 @@ function test(prj, bef, aft, rc) {
   const cut = top.length + 1;
 
   console.log(`🧪 ${prj} plain > pnpm -r i --ignore-pnpmfile`);
-  reset(top);
+  reset(top, true);
   init(top, 'pnpm -r i --ignore-pnpmfile', rc);
   const rs1 = scan(top, cut);
 
   console.log(`🧪 ${prj} hoist> pnpm -r i --no-frozen-lockfile`);
-  reset(top);
+  reset(top, true);
   init(top, 'pnpm -r i --no-frozen-lockfile', rc);
   const rs2 = scan(top, cut);
 
   // ci check
   console.log(`🧪 ${prj} pnpm -r i --frozen-lockfile`);
+  reset(top, false);
   init(top, 'pnpm -r i --frozen-lockfile', rc);
   const rs3 = scan(top, cut);
 
