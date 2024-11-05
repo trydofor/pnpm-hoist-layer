@@ -1,4 +1,4 @@
-﻿// module.exports = require('pnpm-hoist-layer');
+// module.exports = require('pnpm-hoist-layer');
 const version = '1.1.7';
 const lockFile = 'hoist-layer.json';
 const packageKey = 'hoistLayer';
@@ -159,34 +159,31 @@ function loadLayerCache(cwd, map, log) {
     const layerArr = Array.from(map.values());
     for (const pkg of layerArr) {
       const lys = new Map(map);
-      let udp;
+      let udp = [0, 0];
       do {
-        udp = false;
+        udp = [0, 0];
         for (const [nm, ly] of lys) {
           if (pkg.dependencies[nm] == null && pkg.devDependencies[nm] == null) continue;
 
-          if (debug) {
-            log(`flat ${pkg.name} deps=${JSON.stringify(pkg.dependencies, null, 2)}, with=${JSON.stringify(ly.dependencies, null, 2)}`);
-            log(`flat ${pkg.name} devDeps=${JSON.stringify(pkg.devDependencies, null, 2)}, with=${JSON.stringify(ly.devDependencies, null, 2)}`);
-          }
-
+          if (debug) log(`flat ${pkg.name} deps=${JSON.stringify(pkg.dependencies, null, 2)}`);
           for (const [k, v] of Object.entries(ly.dependencies)) {
             if (pkg.dependencies[k] != null) continue;
             pkg.dependencies[k] = v;
-            udp = true;
+            udp[0]++;
+            if (debug) log(`  with ${nm} #${udp[0]} ${k}=${v}`);
           }
+          if (debug) log(`flat ${pkg.name} devDeps=${JSON.stringify(pkg.devDependencies, null, 2)}`);
           for (const [k, v] of Object.entries(ly.devDependencies)) {
             if (pkg.devDependencies[k] != null) continue;
             pkg.devDependencies[k] = v;
-            udp = true;
+            udp[1]++;
+            if (debug) log(`  with ${nm} #${udp[1]} ${k}=${v}`);
           }
 
-          if (udp) {
-            lys.delete(nm);
-            log(`🔀 flat ${pkg.name} with ${nm}`);
-          }
+          log(`🔀 flat ${pkg.name} with ${nm}, deps=${upd[0]}, devDeps=${upd[1]}`);
+          lys.delete(nm);
         }
-      } while (udp);
+      } while (udp[0] > 0 || udp[1] > 0);
     }
 
     // sort deps by name
