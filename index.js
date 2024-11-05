@@ -1,5 +1,5 @@
 // module.exports = require('pnpm-hoist-layer');
-const version = '1.1.7';
+const version = '1.1.9';
 const lockFile = 'hoist-layer.json';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
@@ -159,31 +159,33 @@ function loadLayerCache(cwd, map, log) {
     const layerArr = Array.from(map.values());
     for (const pkg of layerArr) {
       const lys = new Map(map);
-      let udp = [0, 0];
+      let upd1 = 0;
+      let upd2 = 0;
       do {
-        udp = [0, 0];
         for (const [nm, ly] of lys) {
           if (pkg.dependencies[nm] == null && pkg.devDependencies[nm] == null) continue;
 
-          if (debug) log(`flat ${pkg.name} deps=${JSON.stringify(pkg.dependencies, null, 2)}`);
+          if (debug) log(`${pkg.name} deps=${JSON.stringify(pkg.dependencies, null, 2)} flat ${nm}`);
           for (const [k, v] of Object.entries(ly.dependencies)) {
             if (pkg.dependencies[k] != null) continue;
             pkg.dependencies[k] = v;
-            udp[0]++;
-            if (debug) log(`  with ${nm} #${udp[0]} ${k}=${v}`);
+            upd1++;
+            if (debug) log(`|-#${upd1} ${k}=${v}`);
           }
-          if (debug) log(`flat ${pkg.name} devDeps=${JSON.stringify(pkg.devDependencies, null, 2)}`);
+          if (debug) log(`${pkg.name} devDeps=${JSON.stringify(pkg.devDependencies, null, 2)} flat ${nm}`);
           for (const [k, v] of Object.entries(ly.devDependencies)) {
             if (pkg.devDependencies[k] != null) continue;
             pkg.devDependencies[k] = v;
-            udp[1]++;
-            if (debug) log(`  with ${nm} #${udp[1]} ${k}=${v}`);
+            upd2++;
+            if (debug) log(`|-#${upd2} ${k}=${v}`);
           }
 
-          log(`🔀 flat ${pkg.name} with ${nm}, deps=${upd[0]}, devDeps=${upd[1]}`);
+          log(`🔀 ${pkg.name} flat ${nm} (deps=${upd1},devDeps=${upd2})=${upd1 + upd2}`);
           lys.delete(nm);
+          upd1 = 0;
+          upd2 = 0;
         }
-      } while (udp[0] > 0 || udp[1] > 0);
+      } while (upd1 > 0 || upd2 > 0);
     }
 
     // sort deps by name
