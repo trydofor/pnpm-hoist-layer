@@ -1,5 +1,5 @@
 // module.exports = require('pnpm-hoist-layer');
-const version = '1.1.9';
+const version = '1.1.10';
 const lockFile = 'hoist-layer.json';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
@@ -94,6 +94,7 @@ function loadLayerCache(cwd, map, log) {
   }
 
   // from child process
+  const sub = new Map();
   const cmd = debug ? findPrcCmd : `${findPrcCmd} -s`;
   log(`🪝 Starting loadLayerCache(${version}) by ${cmd}`);
   try {
@@ -111,11 +112,11 @@ function loadLayerCache(cwd, map, log) {
         continue;
       }
       const layer = JSON.parse(line.substring(findOutKey.length));
-      map.set(layer.name, layer);
+      sub.set(layer.name, layer);
     };
 
     const layerRef = new Set(); // hoistLayer defined in current workspace/projects
-    for (const pkg of map.values()) {
+    for (const pkg of sub.values()) {
       const hl = pkg.hoistLayer;
       if (hl == null) continue;
 
@@ -131,17 +132,17 @@ function loadLayerCache(cwd, map, log) {
       log(`🪝 hoist=${JSON.stringify(Array.from(layerRef))}`);
     }
 
-    const directDeps = new Set(Array.from(map.keys()));
+    const directDeps = new Set(Array.from(sub.keys()));
     for (const dk of directDeps) {
       if (!layerRef.has(dk)) {
         if (debug) log(`loadHoistLayer-${process.pid}: removing non-layer package= ${dk}`);
-        map.delete(dk);
+        sub.delete(dk);
       }
     }
 
     let miss = 0;
     for (const ln of layerRef) {
-      if (!map.has(ln)) {
+      if (!sub.has(ln)) {
         miss++;
         log(`❌ loadHoistLayer-${process.pid}: missing layer package= ${ln}`);
       }
@@ -156,13 +157,13 @@ function loadLayerCache(cwd, map, log) {
 
     // flat layers. pnpm may disorder to deps tree,
     // e.g.["mono-test-1","mono-test-2","mono-test-0"], ["mono-test-0","mono-test-1","mono-test-2"]
-    const layerArr = Array.from(map.values());
+    const layerArr = Array.from(sub.values());
     for (const pkg of layerArr) {
-      const lys = new Map(map);
+      const tmp = new Map(sub);
       let upd1 = 0;
       let upd2 = 0;
       do {
-        for (const [nm, ly] of lys) {
+        for (const [nm, ly] of tmp) {
           if (pkg.dependencies[nm] == null && pkg.devDependencies[nm] == null) continue;
 
           if (debug) log(`${pkg.name} deps=${JSON.stringify(pkg.dependencies, null, 2)} flat ${nm}`);
@@ -181,7 +182,7 @@ function loadLayerCache(cwd, map, log) {
           }
 
           log(`🔀 ${pkg.name} flat ${nm} (deps=${upd1},devDeps=${upd2})=${upd1 + upd2}`);
-          lys.delete(nm);
+          tmp.delete(nm);
           upd1 = 0;
           upd2 = 0;
         }
@@ -198,6 +199,10 @@ function loadLayerCache(cwd, map, log) {
 
     // write to lock file
     fs.writeFileSync(lockPath, JSON.stringify(layerArr, null, 2));
+
+    for (const pkg of layerArr) {
+      map.set(pkg.name, pkg);
+    }
   }
   catch (err) {
     log(`🐞 to debug 🐞 ${findPrcCmd} --ignore-pnpmfile`);
@@ -265,15 +270,16 @@ function readPackage(pkg, context) {
     return pkg;
   }
 
-  // hoist deps. no devDependencies while installing, unlike resolving
-  const pkgAndDeps = [Object.keys(pkg.dependencies), ...Object.keys(pkg.devDependencies)];
+  // hoist deps. no devDependencies while installing, parse them by resolving
+  const pkgAndDeps = [...Object.keys(pkg.dependencies), ...Object.keys(pkg.devDependencies)];
   for (const dep of pkgAndDeps) {
     const layer = layerPkgMap.get(dep);
     if (layer == null) continue;
     const deps0 = Object.keys(pkg.dependencies).length;
     const devs0 = Object.keys(pkg.devDependencies).length;
-    pkg.dependencies = { ...pkg.dependencies, ...layer.dependencies };
-    pkg.devDependencies = { ...pkg.devDependencies, ...layer.devDependencies };
+    // this deps override layer deps if both have
+    pkg.dependencies = { ...layer.dependencies, ...pkg.dependencies };
+    pkg.devDependencies = { ...layer.devDependencies, ...pkg.devDependencies };
     const deps1 = Object.keys(layer.dependencies).length;
     const devs1 = Object.keys(layer.devDependencies).length;
     const deps2 = Object.keys(pkg.dependencies).length;
