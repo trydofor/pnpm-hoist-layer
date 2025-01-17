@@ -28,6 +28,46 @@ e.g. `mobile->common`, `common->@nuxt`, after hoist layer,
 +   │   ├── @nuxt -> ../.pnpm/... // ✅ hoist as layer
 ```
 
+## Mechanism
+
+When using `catalog` in `pnpm-workspace.yaml`, it is not easy to manage
+the dependencies via `pnpm add`, the recommended practice is to manually
+edit the `catalog` and the `package.json`, and then run `pnpm i` to
+install the update, at this point, the following happens to pnpm-hoist-layer.
+
+* make a temporary directory(tmpDir), and write the `.pnpmfile.cjs` hook.
+* start the sub-process, `pnpm -r i --resolution-only --lockfile-dir=tmpDir`
+* sub-process quickly resolves packages related to hoistLayer
+* top-process parse stdout of sub-process as hoistLayer metadata
+* top-process merges hoistLayer metadata via hooks
+
+the hoistLayer metadata is `📝 hoist-layer.json` in the console,
+
+```json
+[
+  {
+    "name": "hoist1",
+    "dependencies": {
+      "date-fns": "catalog:h1",
+      "lodash-es": "catalog:h1"
+    },
+    "devDependencies": {}
+  },
+  {
+    "name": "hoist2",
+    "dependencies": {
+      "date-fns": "catalog:h2",
+      "hoist1": "workspace:*",
+      "lodash-es": "catalog:h1"
+    },
+    "devDependencies": {},
+    "hoistLayer": [
+      "hoist1"
+    ]
+  }
+]
+```
+
 ## Usage
 
 (1) add `layer` to the package.json
@@ -79,8 +119,6 @@ the deps tree are resolved from top to bottom, and hoist from bottom to top, it'
 * ✅ shared-workspace-lockfile=false, may 🐞 [peers](https://github.com/pnpm/pnpm/issues/8538)
 * ✅ monorepo + shared-workspace-lockfile=false, but 🐞 [default=true](https://github.com/vuejs/language-tools/issues/4860)
 * ✅ pnpm cli at top-dir, but 🐞 sub-dir (`packages/*`)
-* ✅ for CI keep `hoist-layer.json`, or 🐞 LOCKFILE ERROR
-* ✅ `hoistLayer` + `*Dependencies`, or 🐞 [Missing order](https://github.com/trydofor/pnpm-hoist-layer/issues/2)
 * ✅ `--resolution-only` resolve `devDependencies`, but ❗ `pnpm i` NOT.
 * ❗ do NOT use [`link:`](https://pnpm.io/cli/link), it do NOT hook
 * ❗ do NOT deps indirectly , 2+ level deps NOT resolved
@@ -128,8 +166,10 @@ pnpm test
 # ✅ Success mono2, npmrc={"shared-workspace-lockfile":false}
 # ✅ Success poly1, npmrc={}
 # ✅ Success poly2, npmrc={}
+# ✅ Success hoist, npmrc={}
 ```
 
+* hoist - hoist auto/manual testing
 * mono1 - multi-pkg + workspace, sub `hoistLayer`
 * mono2 - multi-pkg + workspace, top `hoistLayer`
 * poly1 - multi-pkg, sub `hoistLayer`

@@ -156,7 +156,24 @@ const repos = [
       'packages/pkg2/node_modules/solo-dev-dep',
       'packages/pkg2/node_modules/solo-prd-dep',
     ],
-  }];
+  },
+  {
+    path: ['hoist'],
+    plain: [
+      'packages/h1/node_modules/date-fns',
+      'packages/h1/node_modules/lodash-es',
+      'packages/h2/node_modules/date-fns',
+      'packages/h2/node_modules/hoist1',
+    ],
+    hoist: [
+      'packages/h1/node_modules/date-fns',
+      'packages/h1/node_modules/lodash-es',
+      'packages/h2/node_modules/date-fns',
+      'packages/h2/node_modules/hoist1',
+      'packages/h2/node_modules/lodash-es',
+    ],
+  },
+];
 
 for (const repo of repos) {
   if (process.argv.includes('--reset')) {

@@ -1,0 +1,12 @@
+{
+  "name": "hoist2",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "date-fns": "catalog:h2",
+    "hoist1": "workspace:*"
+  },
+  "hoistLayer": [
+    "hoist1"
+  ]
+}

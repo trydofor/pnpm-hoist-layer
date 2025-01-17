@@ -1,0 +1,9 @@
+{
+  "name": "hoist1",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "date-fns": "catalog:h1",
+    "lodash-es": "catalog:h1"
+  }
+}

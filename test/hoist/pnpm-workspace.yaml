@@ -1,0 +1,9 @@
+## https://pnpm.io/workspaces
+packages:
+  - 'packages/*'
+catalogs:
+  h1:
+    "date-fns": "4.0.0"
+    "lodash-es": "4.17.20"
+  h2:
+    "date-fns": "4.1.0"
