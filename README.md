@@ -28,7 +28,7 @@ e.g. `mobile->common`, `common->@nuxt`, after hoist layer,
 +   │   ├── @nuxt -> ../.pnpm/... // ✅ hoist as layer
 ```
 
-## Mechanism
+## How it Works
 
 When using `catalog` in `pnpm-workspace.yaml`, it is not easy to manage
 the dependencies via `pnpm add`, the recommended practice is to manually
@@ -90,27 +90,18 @@ the hoistLayer metadata is `📝 hoist-layer.json` in the console,
 ## 💾 opt-1: project install and require
 pnpm add -D pnpm-hoist-layer
 cat > .pnpmfile.cjs << 'EOF'
-module.exports = require('pnpm-hoist-layer');
+const pnpmfile = {};
+try {
+  pnpmfile.hooks = require('pnpm-hoist-layer').hooks;
+} catch {
+  console.warn('⚠️ "pnpm-hoist-layer" not found, retry after installing.');
+}
+module.exports = pnpmfile;
 EOF
 
-## 📦 opt-2: write content to .pnpmfile.cjs
+## 📦 opt-2: write the content to .pnpmfile.cjs
 curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
 /pnpm-hoist-layer/main/index.js
-
-## 🏠 opt-3: global install and require
-pnpm add -g pnpm-hoist-layer
-cat > .pnpmfile.cjs << 'EOF'
-module.exports = (() => {
-  try {
-    return require('pnpm-hoist-layer');
-  }
-  catch {
-    const gr = require('child_process').execSync('pnpm root -g').toString().trim();
-    return require(require('path').join(gr, 'pnpm-hoist-layer'));
-  }
-})();
-EOF
-```
 
 ## Known Issues
 
@@ -124,9 +115,32 @@ the deps tree are resolved from top to bottom, and hoist from bottom to top, it'
 * ❗ do NOT deps indirectly , 2+ level deps NOT resolved
 * ❗ this is a [bad practice](https://github.com/pnpm/pnpm/issues/8588)
 
-## Useful Commands
+## Node and Pnpm
+
+manages `nodejs` version by [asdf](https://asdf-vm.com)
+and `pnpm` by [corepack](https://nodejs.org/api/corepack.html)
 
 ```bash
+git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+## config zsh
+cat >> ~/.zshrc << 'EOF'
+export ASDF_NODEJS_AUTO_ENABLE_COREPACK=true
+export ASDF_NODEJS_LEGACY_FILE_DYNAMIC_STRATEGY=latest_installed
+source "$HOME/.asdf/asdf.sh"
+EOF
+## support .nvmrc or .node-version
+cat >> ~/.asdfrc << 'EOF'
+legacy_version_file=yes
+EOF
+
+## install nodejs plugin
+asdf plugin add nodejs
+## install nodejs and corepack enable
+asdf install nodejs
+## by package.json and corepack
+pnpm -v
+## Corepack is about to download
+
 ## init workspace top-project first
 pnpm -w i --ignore-pnpmfile
 ## init workspace sub-project
@@ -135,14 +149,6 @@ pnpm -r i
 DEBUG=1 pnpm i
 ## ignore if error
 pnpm i --ignore-pnpmfile --ignore-scripts
-
-## asdf nodejs+pnpm, should disable corepack
-export PNPM_HOME="$(asdf where pnpm)"
-pnpm -g add pnpm-hoist-layer
-
-## only corepack
-corepack enable pnpm
-corepack use pnpm@latest
 ```
 
 ## Test and Diff

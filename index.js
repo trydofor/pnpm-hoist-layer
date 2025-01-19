@@ -1,17 +1,14 @@
 // module.exports = require('pnpm-hoist-layer');
-const version = '1.2.0';
+const version = '1.2.1';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
-const findEnvKey = 'HOIST_LAYER_FIND';
 const findPrcCmd = 'pnpm -r i --resolution-only --lockfile-only --no-optional --ignore-scripts';
 const debug = process.env['DEBUG'] != null;
 
-const path = require('path');
-const fs = require('fs');
-
 if (debug) console.log(`🪝 HoistLayer ${version} debug pid=${process.pid}`);
 
-const subHook = `
+const subHook = Object.entries({ packageKey, findOutKey }).reduce(
+  (str, [k, v]) => str.replaceAll(k, `'${v}'`), `
 const layerPkgMap = new Map();
 function readPackage(pkg) {
   const hoistLayer = pkg[packageKey];
@@ -51,7 +48,7 @@ module.exports = {
     readPackage,
   },
 };
-`.replaceAll('packageKey', `'${packageKey}'`).replaceAll('findOutKey', `'${findOutKey}'`);
+`);
 
 function findHoistLayer(cwd, log) {
   // from child process
@@ -60,16 +57,15 @@ function findHoistLayer(cwd, log) {
   log(`🪝 Starting findHoistLayer(${version}) by ${cmd}`);
   let output = '';
   try {
+    const path = require('path');
+    const fs = require('fs');
     const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'pnpm-hoist-'));
     // fs.rmSync(path.join(tmpDir, 'pnpm-lock.yaml'));
     fs.writeFileSync(path.join(tmpDir, '.pnpmfile.cjs'), subHook)
     log(`🔒 --lockfile-dir=${tmpDir}`);
-    output = require('child_process').execSync(`${cmd} --lockfile-dir=${tmpDir}`,
-      {
-        cwd,
-        stdio: ['ignore', 'pipe', 'inherit'],
-        env: { ...process.env, [findEnvKey]: 'true' },
-      },
+    output = require('child_process').execSync(
+      `${cmd} --lockfile-dir=${tmpDir}`,
+      { cwd, stdio: ['ignore', 'pipe', 'inherit'] },
     ).toString();
     if (!debug) fs.rmSync(tmpDir, { recursive: true, force: true });
   }
