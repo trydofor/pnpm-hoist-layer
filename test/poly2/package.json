@@ -2,10 +2,6 @@
   "name": "poly-test-9",
   "version": "1.0.0",
   "description": "pnpm polyrepo (not workspace) test",
-  "engines": {
-    "node": ">=20",
-    "pnpm": ">=9"
-  },
   "hoistLayer": [
     "poly-test-1",
     "poly-test-2"

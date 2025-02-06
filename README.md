@@ -3,6 +3,8 @@
 use `.pnpmfile.cjs` to hoist deps/devDeps to project like
 [Nuxt Layer](https://nuxt.com/docs/getting-started/layers)
 
+✅ 10.x, 9.12+ Downloads(7-Days > 500K)
+
 ## Purpose
 
 pnpm [public-hoist-pattern](https://pnpm.io/npmrc#public-hoist-pattern)
