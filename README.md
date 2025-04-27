@@ -104,7 +104,7 @@ EOF
 ## 📦 opt-2: write the content to .pnpmfile.cjs
 curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
 /pnpm-hoist-layer/main/index.js
-
+```
 ## Known Issues
 
 the deps tree are resolved from top to bottom, and hoist from bottom to top, it's a reverse process.
