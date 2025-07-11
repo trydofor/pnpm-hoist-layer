@@ -1,0 +1,23 @@
+﻿name: "Setup Pnpm and Node.js"
+description: "Reusable steps, pnpm and node.js"
+inputs:
+  pnpm-version:
+    description: "Version of pnpm to install"
+    required: true
+    default: 'latest'
+
+runs:
+  using: "composite"
+  steps:
+
+    # https://pnpm.io/continuous-integration#github-actions
+    - name: Setup pnpm by version
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm-version }}
+
+    - name: Setup nodejs by .nvmrc
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+        cache: 'pnpm'
