@@ -1,0 +1,14 @@
+{
+  "name": "hoist-4",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "hoist-2": "workspace:*"
+  },
+  "hoistLayer": [
+    [
+      "hoist-2",
+      "lodash-es"
+    ]
+  ]
+}

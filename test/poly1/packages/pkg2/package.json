@@ -1,7 +1,8 @@
 {
-  "name": "poly-test-2",
+  "name": "poly-2",
   "version": "1.0.0",
   "dependencies": {
+    "solo-exc-dep": "link:../../solo/exc",
     "solo-prd-dep": "link:../../solo/prd"
   },
   "devDependencies": {

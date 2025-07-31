@@ -37,7 +37,7 @@ function readPackage(pkg) {
   }
 
   for (const ly of hoistLayer || []) {
-    layerPkgMap.set(ly, true);
+    layerPkgMap.set(typeof ly === 'string' ? ly : ly[0], true);
   }
 
   return skip ? { name: pkg.name, type: pkg.type, version: pkg.version } : pkg;
@@ -96,12 +96,12 @@ function findHoistLayer(cwd, log) {
 
   const layerRef = new Set(); // hoistLayer defined in current workspace/projects
   for (const pkg of sub.values()) {
-    const hl = pkg.hoistLayer;
+    const hl = pkg[packageKey];
     if (hl == null) continue;
 
     layerRef.add(pkg.name);
     for (const pn of hl) {
-      layerRef.add(pn);
+      layerRef.add(typeof pn === 'string' ? pn : pn[0]);
     }
   }
 
@@ -135,26 +135,52 @@ function findHoistLayer(cwd, log) {
   }
 
   // flat layers. pnpm may disorder to deps tree,
-  // e.g.["mono-test-1","mono-test-2","mono-test-0"], ["mono-test-0","mono-test-1","mono-test-2"]
+  // e.g.["mono-1","mono-2","mono-0"], ["mono-0","mono-1","mono-2"]
   const layerArr = Array.from(sub.values());
+  const layerExc = new Map();
+  for (const pkg of layerArr) {
+    for (const itm of pkg.hoistLayer || []) {
+      let lyn, sts;
+      if (typeof itm === 'string') {
+        lyn = itm;
+        sts = new Set();
+      } else {
+        const [ly, ...exc] = itm;
+        lyn = ly;
+        sts = new Set(exc);
+      }
+
+      layerExc.set(pkg.name + ':' + lyn, sts);
+      // not isolate, normally top project at first
+      if (layerExc.has(lyn)) {
+        log(`⚠️ hoistLayer ${itm} existed, skip layer in ${pkg.name}`);
+      } else {
+        layerExc.set(lyn, sts);
+      }
+    }
+  }
+
+  const emp = new Set();
   for (const pkg of layerArr) {
     const tmp = new Map(sub);
+
     let upd1 = 0;
     let upd2 = 0;
     do {
       for (const [nm, ly] of tmp) {
         if (pkg.dependencies[nm] == null && pkg.devDependencies[nm] == null) continue;
-
+        // layer from package+layer > layer
+        const exc = layerExc.get(pkg.name + ':' + nm) || layerExc.get(nm) || emp;
         if (debug) log(`${pkg.name} deps=${JSON.stringify(pkg.dependencies, null, 2)} flat ${nm}`);
         for (const [k, v] of Object.entries(ly.dependencies)) {
-          if (pkg.dependencies[k] != null) continue;
+          if (pkg.dependencies[k] != null || exc.has(k)) continue;
           pkg.dependencies[k] = v;
           upd1++;
           if (debug) log(`|-#${upd1} ${k}=${v}`);
         }
         if (debug) log(`${pkg.name} devDeps=${JSON.stringify(pkg.devDependencies, null, 2)} flat ${nm}`);
         for (const [k, v] of Object.entries(ly.devDependencies)) {
-          if (pkg.devDependencies[k] != null) continue;
+          if (pkg.devDependencies[k] != null || exc.has(k)) continue;
           pkg.devDependencies[k] = v;
           upd2++;
           if (debug) log(`|-#${upd2} ${k}=${v}`);
@@ -168,10 +194,7 @@ function findHoistLayer(cwd, log) {
     } while (upd1 > 0 || upd2 > 0);
   }
 
-  // sort layer by name
-  layerArr.sort((a, b) => a.name.localeCompare(b.name));
   return layerArr;
-
 }
 
 function loadHoistLayer(map, log) {

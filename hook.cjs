@@ -32,7 +32,7 @@ function readPackage(pkg) {
   }
 
   for (const ly of hoistLayer || []) {
-    layerPkgMap.set(ly, true);
+    layerPkgMap.set(typeof ly === 'string' ? ly : ly[0], true);
   }
 
   return skip ? { name: pkg.name, type: pkg.type, version: pkg.version } : pkg;

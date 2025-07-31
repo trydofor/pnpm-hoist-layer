@@ -72,21 +72,26 @@ the hoistLayer metadata is `📝 hoist-layer.json` in the console,
 
 ## Usage
 
-(1) add `layer` to the package.json
+(1) add `hoistLayer` to the `package.json`
 
-* `hoistLayer` - to define which is the layer
 * `*dependencies` - for package resolution
+* `hoistLayer` - to define the layer package, if the item is
+  - string - include it and all its dependencies
+  - array - include it(`[0]`) but exclude the dependencies(`[1...]`)
+* ⚠️ In complex layered repos, exclude rules may introduce bug and bad isolation.
 
 ```diff
   "devDependencies": {
++   "@fessional/razor": "0.1.0",
 +   "@fessional/razor-common": "file:../common",
   },
 + "hoistLayer": [
++   [ "@fessional/razor", "semver" ],
 +   "@fessional/razor-common",
 + ]
 ```
 
-(2) write `.pnpmfile.cjs` to hook
+(2) write `.pnpmfile.cjs` as pnpm hook
 
 ```bash
 ## 💾 opt-1: project install and require
@@ -94,9 +99,11 @@ pnpm add -D pnpm-hoist-layer
 cat > .pnpmfile.cjs << 'EOF'
 const pnpmfile = {};
 try {
-  pnpmfile.hooks = require('pnpm-hoist-layer').hooks;
+  const hoist = require('pnpm-hoist-layer');
+  pnpmfile.hooks = hoist.hooks;
+  console.info('✅ pnpm-hoist-layer is', hoist.version);
 } catch {
-  console.warn('⚠️ "pnpm-hoist-layer" not found, retry after installing.');
+  console.warn('⚠️ pnpm-hoist-layer not found, reinstall to enable layer hoisting.');
 }
 module.exports = pnpmfile;
 EOF

@@ -1,9 +1,12 @@
 {
-  "name": "poly-test-9",
+  "name": "poly",
   "version": "1.0.0",
-  "description": "pnpm polyrepo (not workspace) test",
+  "description": "pnpm poly-repo (not workspace) test",
   "hoistLayer": [
-    "poly-test-1",
-    "poly-test-2"
+    "poly-1",
+    [
+      "poly-2",
+      "solo-exc-dep"
+    ]
   ]
 }

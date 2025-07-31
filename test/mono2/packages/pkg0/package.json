@@ -1,7 +1,7 @@
 {
-  "name": "mono-test-0",
+  "name": "mono-0",
   "version": "1.0.0",
   "devDependencies": {
-    "mono-test-1": "file:../pkg1"
+    "mono-1": "file:../pkg1"
   }
 }

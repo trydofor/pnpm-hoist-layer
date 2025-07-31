@@ -1,7 +1,7 @@
 {
-  "name": "mono-test-1",
+  "name": "mono-1",
   "version": "1.0.0",
   "devDependencies": {
-    "mono-test-2": "workspace:*"
+    "mono-2": "workspace:*"
   }
 }

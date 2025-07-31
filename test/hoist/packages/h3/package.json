@@ -1,0 +1,14 @@
+{
+  "name": "hoist-3",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "hoist-2": "workspace:*"
+  },
+  "hoistLayer": [
+    [
+      "hoist-2",
+      "hoist-1"
+    ]
+  ]
+}

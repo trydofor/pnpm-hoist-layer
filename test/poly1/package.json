@@ -1,5 +1,5 @@
 {
-  "name": "poly-test-9",
+  "name": "poly",
   "version": "1.0.0",
-  "description": "pnpm polyrepo (not workspace) test"
+  "description": "pnpm poly-repo (not workspace) test"
 }

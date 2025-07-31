@@ -1,7 +1,7 @@
 {
-  "name": "poly-test-1",
+  "name": "poly-1",
   "version": "1.0.0",
   "devDependencies": {
-    "poly-test-2": "file:../pkg2"
+    "poly-2": "file:../pkg2"
   }
 }

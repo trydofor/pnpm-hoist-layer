@@ -1,9 +1,12 @@
 {
-  "name": "mono-test-9",
+  "name": "mono-9",
   "version": "1.0.0",
   "description": "pnpm monorepo (workspace) test",
   "hoistLayer": [
-    "mono-test-1",
-    "mono-test-2"
+    "mono-1",
+    [
+      "mono-2",
+      "solo-exc-dep"
+    ]
   ]
 }
