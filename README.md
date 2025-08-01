@@ -3,7 +3,8 @@
 use `.pnpmfile.cjs` to hoist deps/devDeps to project like
 [Nuxt Layer](https://nuxt.com/docs/getting-started/layers)
 
-✅ 10.x, 9.12+ Downloads(7-Days > 500K)
+* ✅ 9.12, 9.13, 9.14, 9.15
+* ✅ 10.12, 10.13, 10.14
 
 ## Purpose
 
@@ -72,7 +73,7 @@ the hoistLayer metadata is `📝 hoist-layer.json` in the console,
 
 ## Usage
 
-(1) add `hoistLayer` to the `package.json`
+### add `hoistLayer` to the `package.json`
 
 * `*dependencies` - for package resolution
 * `hoistLayer` - to define the layer package, if the item is
@@ -91,10 +92,11 @@ the hoistLayer metadata is `📝 hoist-layer.json` in the console,
 + ]
 ```
 
-(2) write `.pnpmfile.cjs` as pnpm hook
+### write `.pnpmfile.cjs` as pnpm hook\
+
+💾 Opt-1: project install and require
 
 ```bash
-## 💾 opt-1: project install and require
 pnpm add -D pnpm-hoist-layer
 cat > .pnpmfile.cjs << 'EOF'
 const pnpmfile = {};
@@ -107,14 +109,18 @@ try {
 }
 module.exports = pnpmfile;
 EOF
+```
 
-## 📦 opt-2: write the content to .pnpmfile.cjs
+📦 Opt-2: write the content to .pnpmfile.cjs
+
+```bash
 curl -o .pnpmfile.cjs https://raw.githubusercontent.com/trydofor\
 /pnpm-hoist-layer/main/index.js
 ```
+
 ## Known Issues
 
-the deps tree are resolved from top to bottom, and hoist from bottom to top, it's a reverse process.
+The deps tree are resolved from top to bottom, and hoist from bottom to top, it's a reverse process.
 
 * ✅ shared-workspace-lockfile=false, may 🐞 [peers](https://github.com/pnpm/pnpm/issues/8538)
 * ✅ monorepo + shared-workspace-lockfile=false, but 🐞 [default=true](https://github.com/vuejs/language-tools/issues/4860)

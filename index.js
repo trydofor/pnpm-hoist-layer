@@ -1,5 +1,5 @@
 // module.exports = require('pnpm-hoist-layer');
-const version = '1.2.1';
+const version = '1.3.1';
 const packageKey = 'hoistLayer';
 const findOutKey = ':::HoistLayerJson:::';
 const findPrcCmd = 'pnpm -r i --resolution-only --lockfile-only --no-optional --ignore-scripts';
